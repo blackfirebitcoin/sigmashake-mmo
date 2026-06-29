@@ -67,6 +67,26 @@ describe("tavern recruit / disband", () => {
     assert.ok(capped <= PARTY_MAX_MEMBERS, "never exceeds the party cap");
   });
 
+  test("the party journeys together — recruited members follow the leader each hop", () => {
+    const w = freshWorld();
+    const npc = townNpcs(w)[0];
+    recruit(w, npc.id);
+    const town = w.sigmacraft.map.townTileId;
+    assert.equal(npc.tileId, town, "member starts in town with the leader");
+
+    // leader walks two adjacent hops; the member must be co-located after each
+    let here = town;
+    for (let hop = 0; hop < 2; hop++) {
+      const next = w.sigmacraft.map.tiles[here].exits.find((e) => w.sigmacraft.map.tiles[e]);
+      enqueueSigmacraftIntent(w, LEADER, { kind: "move", targetId: next, nonce: `m${hop}` });
+      advance({ world: w, store: feedStore() });
+      assert.equal(w.sigmacraft.actorPlaces[LEADER], next, "leader advanced");
+      assert.equal(w.sigmacraft.overworldNpcs[npc.id].tileId, next, "member followed to the leader's tile");
+      here = next;
+    }
+    assert.equal(w.sigmacraft.parties[LEADER].status, "traveling", "party is traveling");
+  });
+
   test("disband clears the party and releases partyLock; snapshot reflects it", () => {
     const w = freshWorld();
     const npc = townNpcs(w)[0];
