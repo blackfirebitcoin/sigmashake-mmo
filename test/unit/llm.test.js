@@ -73,7 +73,8 @@ describe("circuit breaker (injected clock)", () => {
     let ok = false;
     const llm = createLlmClient({
       env: { CEREBRAS_API_KEY: "k", LLM_BREAKER_FAILS: "2" },
-      fetchImpl: async () => (ok ? completion('{"x":1}') : { ok: false, status: 500, json: async () => ({}) }),
+      fetchImpl: async () =>
+        ok ? completion('{"x":1}') : { ok: false, status: 500, json: async () => ({}) },
     });
     await assert.rejects(() => llm.chat({ user: "u" }), /http 500/);
     ok = true;
@@ -93,7 +94,10 @@ describe("concurrency cap", () => {
       cur -= 1;
       return completion('{"ok":1}');
     };
-    const llm = createLlmClient({ env: { CEREBRAS_API_KEY: "k", LLM_MAX_CONCURRENCY: "3" }, fetchImpl: slowFetch });
+    const llm = createLlmClient({
+      env: { CEREBRAS_API_KEY: "k", LLM_MAX_CONCURRENCY: "3" },
+      fetchImpl: slowFetch,
+    });
     await Promise.all(Array.from({ length: 12 }, () => llm.chat({ user: "u" })));
     assert.ok(max <= 3, `in-flight peaked at ${max}, cap is 3`);
   });

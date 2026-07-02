@@ -8,9 +8,9 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { after, before, describe, test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { freshWorld } from "../../server/world-tick.js";
 

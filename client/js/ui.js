@@ -217,7 +217,11 @@ function buildSigmacraftPanel() {
       place,
       objective,
       actions,
-      el("div", { class: "sc-events-cap", style: { opacity: "0.6", marginTop: "6px" }, text: "Recent" }),
+      el("div", {
+        class: "sc-events-cap",
+        style: { opacity: "0.6", marginTop: "6px" },
+        text: "Recent",
+      }),
       events,
     ],
   );
@@ -237,10 +241,9 @@ export function setSigmacraft(snapshot, vcsAccount = null) {
   }
   R.scPanel.classList.remove("hidden");
   const placeName = snapshot.place?.name || "the wilds";
-  const who =
-    vcsAccount && vcsAccount.verified
-      ? `<span class="amber">${vcsAccount.twitchLogin}</span>`
-      : "an unbound wanderer";
+  const who = vcsAccount?.verified
+    ? `<span class="amber">${vcsAccount.twitchLogin}</span>`
+    : "an unbound wanderer";
   R.scPlace.innerHTML = `${who} at <b class="amber">${placeName}</b> · tick ${snapshot.worldTick ?? 0}`;
   R.scObjective.textContent = snapshot.objective?.title ? `Quest: ${snapshot.objective.title}` : "";
   clear(R.scActions);

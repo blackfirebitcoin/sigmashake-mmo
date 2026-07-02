@@ -6,12 +6,18 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { attachNpcPlanner, makeNpcFallbackProposal } from "../../server/sigmacraft-npc-agents.js";
-import { freshWorld } from "../../server/world-tick.js";
 import { vNpcProposal } from "../../server/validate.js";
+import { freshWorld } from "../../server/world-tick.js";
 
 function fakeStore(world) {
   let dirty = false;
-  return { getWorldState: () => world, putWorldState: () => { dirty = true; }, wasDirty: () => dirty };
+  return {
+    getWorldState: () => world,
+    putWorldState: () => {
+      dirty = true;
+    },
+    wasDirty: () => dirty,
+  };
 }
 const anyNpcId = (w) => Object.keys(w.sigmacraft.overworldNpcs).sort()[0];
 
@@ -59,7 +65,11 @@ describe("off-tick scheduler", () => {
     // signal, or an idle/player-less server would rewrite world.json every cycle
     // (idle quiescence / write-amplification guard; see server/sigmacraft.js).
     assert.ok(!store.wasDirty(), "planner does not persist ambient NPC churn");
-    assert.equal(w.sigmacraft.overworldNpcs[id0].tileId, tileBefore, "planner does not move the NPC");
+    assert.equal(
+      w.sigmacraft.overworldNpcs[id0].tileId,
+      tileBefore,
+      "planner does not move the NPC",
+    );
   });
 
   test("batch auto-sizes to refresh the whole population within the reuse window", async () => {
@@ -72,7 +82,10 @@ describe("off-tick scheduler", () => {
 
   test("env override caps the batch", async () => {
     const w = freshWorld();
-    await attachNpcPlanner({ store: fakeStore(w), env: { SIGMACRAFT_NPC_MAX_PER_CYCLE: "3" } }).plan();
+    await attachNpcPlanner({
+      store: fakeStore(w),
+      env: { SIGMACRAFT_NPC_MAX_PER_CYCLE: "3" },
+    }).plan();
     assert.equal(Object.values(w.sigmacraft.npcAgents).filter((a) => a.plan).length, 3);
   });
 });

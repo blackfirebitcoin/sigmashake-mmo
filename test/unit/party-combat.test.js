@@ -5,12 +5,26 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { resolvePartyEncounter, MAX_ROUNDS, MAX_LOG } from "../../shared/party-combat.js";
+import { MAX_LOG, MAX_ROUNDS, resolvePartyEncounter } from "../../shared/party-combat.js";
 
 const sheet = (o = {}) => ({
-  maxHp: 100, attack: 20, defense: 10, critChance: 0.1, critMult: 1.5, speed: 10, dodge: 0.05, overload: 0.3, ...o,
+  maxHp: 100,
+  attack: 20,
+  defense: 10,
+  critChance: 0.1,
+  critMult: 1.5,
+  speed: 10,
+  dodge: 0.05,
+  overload: 0.3,
+  ...o,
 });
-const C = (id, s = {}, isPlayer = false) => ({ id, name: id, isPlayer, sheet: sheet(s), hp: sheet(s).maxHp });
+const C = (id, s = {}, isPlayer = false) => ({
+  id,
+  name: id,
+  isPlayer,
+  sheet: sheet(s),
+  hp: sheet(s).maxHp,
+});
 
 describe("resolvePartyEncounter — deterministic + bounded", () => {
   test("same seed → byte-identical result; different seed may differ", () => {
@@ -44,21 +58,34 @@ describe("resolvePartyEncounter — deterministic + bounded", () => {
 
 describe("outcomes + kill attribution", () => {
   test("a strong party wins and every kill is attributed to a party member", () => {
-    const party = [C("hero", { attack: 60, maxHp: 200 }, true), C("ally", { attack: 50, maxHp: 180 })];
-    const enemies = [C("gob1", { attack: 4, defense: 0, maxHp: 40 }), C("gob2", { attack: 4, defense: 0, maxHp: 40 })];
+    const party = [
+      C("hero", { attack: 60, maxHp: 200 }, true),
+      C("ally", { attack: 50, maxHp: 180 }),
+    ];
+    const enemies = [
+      C("gob1", { attack: 4, defense: 0, maxHp: 40 }),
+      C("gob2", { attack: 4, defense: 0, maxHp: 40 }),
+    ];
     const r = resolvePartyEncounter({ party, enemies, seed: 42 });
     assert.equal(r.outcome, "victory");
     assert.equal(r.enemies.filter((e) => !e.alive).length, 2, "both enemies down");
     const partyIds = new Set(party.map((c) => c.id));
-    for (const k of r.kills) assert.ok(partyIds.has(k.by), `kill attributed to a party member (${k.by})`);
+    for (const k of r.kills)
+      assert.ok(partyIds.has(k.by), `kill attributed to a party member (${k.by})`);
     assert.ok(r.party.reduce((n, c) => n + c.kills, 0) >= 2, "party kill count tracked");
   });
 
   test("an overmatched party is defeated", () => {
     const party = [C("hero", { attack: 3, defense: 0, maxHp: 30 }, true)];
-    const enemies = [C("ogre1", { attack: 70, maxHp: 300 }), C("ogre2", { attack: 70, maxHp: 300 })];
+    const enemies = [
+      C("ogre1", { attack: 70, maxHp: 300 }),
+      C("ogre2", { attack: 70, maxHp: 300 }),
+    ];
     const r = resolvePartyEncounter({ party, enemies, seed: 3 });
     assert.equal(r.outcome, "defeat");
-    assert.ok(r.party.every((c) => !c.alive), "party wiped");
+    assert.ok(
+      r.party.every((c) => !c.alive),
+      "party wiped",
+    );
   });
 });

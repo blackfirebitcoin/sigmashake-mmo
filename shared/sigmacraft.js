@@ -15,7 +15,13 @@ export const SIGMACRAFT_REALM_ID = "sigmacraft_alpha";
 // Tick-resolved intents. NOTE: a party delve is NOT an intent — it runs inline via
 // POST /api/sigmacraft/delve (server-authoritative, off the tick), so "delve" is
 // deliberately absent here (it would be a misleading dead branch in advance()).
-export const SIGMACRAFT_INTENT_KINDS = Object.freeze(["move", "rest", "talk", "recruit", "disband"]);
+export const SIGMACRAFT_INTENT_KINDS = Object.freeze([
+  "move",
+  "rest",
+  "talk",
+  "recruit",
+  "disband",
+]);
 export const PARTY_MAX_MEMBERS = 4; // recruited NPCs alongside the player leader (party of 5)
 
 export const MAX_SIGMACRAFT_PENDING_INTENTS = 128;
@@ -79,7 +85,7 @@ export function tileSupportsAction(tile, kind) {
 // Returns the first tile on a shortest path, or `fromId` when already there /
 // unreachable. PURE (exits are ordered ⇒ stable), bounded by NPC_PATHFIND_NODE_CAP.
 export function nextHopToward(fromId, toId, tiles) {
-  if (!tiles || !tiles[fromId] || !tiles[toId] || fromId === toId) return fromId;
+  if (!tiles?.[fromId] || !tiles[toId] || fromId === toId) return fromId;
   const prev = { [fromId]: null };
   const queue = [fromId];
   let visited = 0;
@@ -87,7 +93,10 @@ export function nextHopToward(fromId, toId, tiles) {
   while (queue.length && visited < NPC_PATHFIND_NODE_CAP) {
     const cur = queue.shift();
     visited += 1;
-    if (cur === toId) { found = true; break; }
+    if (cur === toId) {
+      found = true;
+      break;
+    }
     for (const nb of tiles[cur]?.exits || []) {
       if (tiles[nb] && !(nb in prev)) {
         prev[nb] = cur;
@@ -161,14 +170,70 @@ export function choose(list, seed) {
 }
 
 const LANDMARKS = Object.freeze({
-  "4,4": { id: "millbridge", name: "Millbridge", description: "A trading village with a watchfire over the river crossing.", terrain: "village", region: "Riverlands", danger: 1 },
-  "5,4": { id: "old_pilgrim_road", name: "Old Pilgrim Road", description: "A wind-cut road lined with shrine markers.", terrain: "road", region: "Pilgrim Road", danger: 2 },
-  "6,4": { id: "ash_shrine", name: "Ash Shrine", description: "A soot-dark chapel where offerings still smolder.", terrain: "shrine", region: "Ashen Weald", danger: 3 },
-  "2,2": { id: "storm_oak_lodge", name: "Storm-Oak Lodge", description: "A timber hall where crafters season storm-oak.", terrain: "forest", region: "Storm-Oak Woods", danger: 2 },
-  "10,2": { id: "basilisk_badlands", name: "Basilisk Badlands", description: "White stones, old scales, and an empty sky.", terrain: "badlands", region: "Basilisk Badlands", danger: 5 },
-  "11,7": { id: "moon_silver_mines", name: "Moon-Silver Mines", description: "Cold mine mouths under old lunar wards.", terrain: "mine", region: "Moon-Silver Range", danger: 4 },
-  "1,8": { id: "bandit_mire", name: "Bandit Mire", description: "Reed blinds, false trails, and stolen banners.", terrain: "mire", region: "Low Mire", danger: 4 },
-  "8,8": { id: "ember_forge", name: "Ember Forge", description: "A communal forge around a coal-red public anvil.", terrain: "forge", region: "Ember Hills", danger: 2 },
+  "4,4": {
+    id: "millbridge",
+    name: "Millbridge",
+    description: "A trading village with a watchfire over the river crossing.",
+    terrain: "village",
+    region: "Riverlands",
+    danger: 1,
+  },
+  "5,4": {
+    id: "old_pilgrim_road",
+    name: "Old Pilgrim Road",
+    description: "A wind-cut road lined with shrine markers.",
+    terrain: "road",
+    region: "Pilgrim Road",
+    danger: 2,
+  },
+  "6,4": {
+    id: "ash_shrine",
+    name: "Ash Shrine",
+    description: "A soot-dark chapel where offerings still smolder.",
+    terrain: "shrine",
+    region: "Ashen Weald",
+    danger: 3,
+  },
+  "2,2": {
+    id: "storm_oak_lodge",
+    name: "Storm-Oak Lodge",
+    description: "A timber hall where crafters season storm-oak.",
+    terrain: "forest",
+    region: "Storm-Oak Woods",
+    danger: 2,
+  },
+  "10,2": {
+    id: "basilisk_badlands",
+    name: "Basilisk Badlands",
+    description: "White stones, old scales, and an empty sky.",
+    terrain: "badlands",
+    region: "Basilisk Badlands",
+    danger: 5,
+  },
+  "11,7": {
+    id: "moon_silver_mines",
+    name: "Moon-Silver Mines",
+    description: "Cold mine mouths under old lunar wards.",
+    terrain: "mine",
+    region: "Moon-Silver Range",
+    danger: 4,
+  },
+  "1,8": {
+    id: "bandit_mire",
+    name: "Bandit Mire",
+    description: "Reed blinds, false trails, and stolen banners.",
+    terrain: "mire",
+    region: "Low Mire",
+    danger: 4,
+  },
+  "8,8": {
+    id: "ember_forge",
+    name: "Ember Forge",
+    description: "A communal forge around a coal-red public anvil.",
+    terrain: "forge",
+    region: "Ember Hills",
+    danger: 2,
+  },
 });
 
 // Landmark tiles that anchor the 6 SIGMA ABYSS combat zones (projection link).
@@ -214,26 +279,134 @@ function tileType(terrain, id) {
   return "wilds";
 }
 
-const NAME_PREFIXES = ["Ari","Bryn","Cael","Dara","Eld","Fenn","Garr","Hale","Ivo","Jora","Kest","Lysa","Marn","Nim","Oren","Perr","Quill","Rook","Sable","Tams","Ulric","Vara","Wren","Ysol","Zane"];
-const NAME_SUFFIXES = ["Ash","Brook","Cairn","Dusk","Ember","Fell","Glen","Hart","Iron","Jun","Knot","Lark","Mire","Nail","Oak","Pike","Quarry","Rune","Stone","Thorn","Vale","Wick","Yew","Zinc"];
+const NAME_PREFIXES = [
+  "Ari",
+  "Bryn",
+  "Cael",
+  "Dara",
+  "Eld",
+  "Fenn",
+  "Garr",
+  "Hale",
+  "Ivo",
+  "Jora",
+  "Kest",
+  "Lysa",
+  "Marn",
+  "Nim",
+  "Oren",
+  "Perr",
+  "Quill",
+  "Rook",
+  "Sable",
+  "Tams",
+  "Ulric",
+  "Vara",
+  "Wren",
+  "Ysol",
+  "Zane",
+];
+const NAME_SUFFIXES = [
+  "Ash",
+  "Brook",
+  "Cairn",
+  "Dusk",
+  "Ember",
+  "Fell",
+  "Glen",
+  "Hart",
+  "Iron",
+  "Jun",
+  "Knot",
+  "Lark",
+  "Mire",
+  "Nail",
+  "Oak",
+  "Pike",
+  "Quarry",
+  "Rune",
+  "Stone",
+  "Thorn",
+  "Vale",
+  "Wick",
+  "Yew",
+  "Zinc",
+];
 
 // Archetype counts sum to NPC_POPULATION_TARGET (200).
 const NPC_ARCHETYPES = Object.freeze([
-  { key: "adventurer", label: "Adventurer", count: 45, factions: ["Free Blades", "Roadwardens", "Lantern Company"], goals: ["find trouble before it finds the road", "earn renown in public quests", "escort weaker travelers"], personas: ["bold sellsword", "careful delver", "laughing spear carrier", "tired veteran"] },
-  { key: "crafter", label: "Crafter", count: 38, factions: ["Ember Guild", "Storm-Oak Carpenters", "Moon-Silver Factors"], goals: ["secure rare materials", "finish a public work order", "keep tools and roads supplied"], personas: ["patient smith", "sharp-eyed tailor", "ore appraiser", "woodwright"] },
-  { key: "bandit", label: "Bandit", count: 35, factions: ["Red Reed Gang", "Ash Knife Crew", "Broken Toll"], goals: ["ambush rich caravans", "avoid patrols", "control a dangerous shortcut"], personas: ["boastful raider", "quiet cutpurse", "deserter captain", "mire scout"] },
-  { key: "merchant", label: "Merchant", count: 25, factions: ["Millbridge Factors", "Moon Cartel", "Pilgrim Peddlers"], goals: ["move goods safely", "find reliable guards", "buy low before the roads close"], personas: ["nervous caravaner", "silver-tongued trader", "supply clerk", "horse broker"] },
-  { key: "guard", label: "Guard", count: 23, factions: ["Millbridge Watch", "Shrine Wardens", "Forge Bailiffs"], goals: ["hold the roads", "break bandit pressure", "protect public works"], personas: ["stern watchman", "road captain", "gate sergeant", "shrine sentinel"] },
-  { key: "scout", label: "Scout", count: 20, factions: ["Lantern Company", "Mire Runners", "High Ridge Eyes"], goals: ["map danger", "report movement", "guide adventurers through harsh travel"], personas: ["soft-spoken pathfinder", "weather reader", "bird-call messenger", "mapmaker"] },
-  { key: "mystic", label: "Mystic", count: 14, factions: ["Ash Choir", "Moon-Silver Oracles", "Mushroom Theologians"], goals: ["interpret omens", "calm old spirits", "trade riddles for protection"], personas: ["ash priest", "dream cartographer", "ritual keeper", "mushroom theologian"] },
+  {
+    key: "adventurer",
+    label: "Adventurer",
+    count: 45,
+    factions: ["Free Blades", "Roadwardens", "Lantern Company"],
+    goals: [
+      "find trouble before it finds the road",
+      "earn renown in public quests",
+      "escort weaker travelers",
+    ],
+    personas: ["bold sellsword", "careful delver", "laughing spear carrier", "tired veteran"],
+  },
+  {
+    key: "crafter",
+    label: "Crafter",
+    count: 38,
+    factions: ["Ember Guild", "Storm-Oak Carpenters", "Moon-Silver Factors"],
+    goals: ["secure rare materials", "finish a public work order", "keep tools and roads supplied"],
+    personas: ["patient smith", "sharp-eyed tailor", "ore appraiser", "woodwright"],
+  },
+  {
+    key: "bandit",
+    label: "Bandit",
+    count: 35,
+    factions: ["Red Reed Gang", "Ash Knife Crew", "Broken Toll"],
+    goals: ["ambush rich caravans", "avoid patrols", "control a dangerous shortcut"],
+    personas: ["boastful raider", "quiet cutpurse", "deserter captain", "mire scout"],
+  },
+  {
+    key: "merchant",
+    label: "Merchant",
+    count: 25,
+    factions: ["Millbridge Factors", "Moon Cartel", "Pilgrim Peddlers"],
+    goals: ["move goods safely", "find reliable guards", "buy low before the roads close"],
+    personas: ["nervous caravaner", "silver-tongued trader", "supply clerk", "horse broker"],
+  },
+  {
+    key: "guard",
+    label: "Guard",
+    count: 23,
+    factions: ["Millbridge Watch", "Shrine Wardens", "Forge Bailiffs"],
+    goals: ["hold the roads", "break bandit pressure", "protect public works"],
+    personas: ["stern watchman", "road captain", "gate sergeant", "shrine sentinel"],
+  },
+  {
+    key: "scout",
+    label: "Scout",
+    count: 20,
+    factions: ["Lantern Company", "Mire Runners", "High Ridge Eyes"],
+    goals: ["map danger", "report movement", "guide adventurers through harsh travel"],
+    personas: ["soft-spoken pathfinder", "weather reader", "bird-call messenger", "mapmaker"],
+  },
+  {
+    key: "mystic",
+    label: "Mystic",
+    count: 14,
+    factions: ["Ash Choir", "Moon-Silver Oracles", "Mushroom Theologians"],
+    goals: ["interpret omens", "calm old spirits", "trade riddles for protection"],
+    personas: ["ash priest", "dream cartographer", "ritual keeper", "mushroom theologian"],
+  },
 ]);
 
 const coordKey = (x, y) => `${x},${y}`;
-const generatedTileId = (x, y) => `wild_${String(x).padStart(2, "0")}_${String(y).padStart(2, "0")}`;
+const generatedTileId = (x, y) =>
+  `wild_${String(x).padStart(2, "0")}_${String(y).padStart(2, "0")}`;
 const tileIdAt = (x, y) => LANDMARKS[coordKey(x, y)]?.id || generatedTileId(x, y);
 
 function terrainFor(x, y) {
-  const bandY = Math.min(TERRAIN_BY_BAND.length - 1, Math.floor((y / WORLD_MAP_HEIGHT) * TERRAIN_BY_BAND.length));
+  const bandY = Math.min(
+    TERRAIN_BY_BAND.length - 1,
+    Math.floor((y / WORLD_MAP_HEIGHT) * TERRAIN_BY_BAND.length),
+  );
   const band = TERRAIN_BY_BAND[bandY];
   return band[(x + y * 2) % band.length];
 }
@@ -247,8 +420,25 @@ function regionFor(x, y, terrain) {
   return TERRAIN_DETAILS[terrain]?.[0] || "Sigmacraft Wilds";
 }
 function dangerFor(x, y, terrain) {
-  const edge = x === 0 || y === 0 || x === WORLD_MAP_WIDTH - 1 || y === WORLD_MAP_HEIGHT - 1 ? 1 : 0;
-  const base = { badlands: 4, mire: 3, mine: 3, ruins: 3, ridge: 2, forest: 2, woods: 2, hills: 2, road: 1, shrine: 1, forge: 1, village: 1, meadow: 1, river: 1 }[terrain] || 1;
+  const edge =
+    x === 0 || y === 0 || x === WORLD_MAP_WIDTH - 1 || y === WORLD_MAP_HEIGHT - 1 ? 1 : 0;
+  const base =
+    {
+      badlands: 4,
+      mire: 3,
+      mine: 3,
+      ruins: 3,
+      ridge: 2,
+      forest: 2,
+      woods: 2,
+      hills: 2,
+      road: 1,
+      shrine: 1,
+      forge: 1,
+      village: 1,
+      meadow: 1,
+      river: 1,
+    }[terrain] || 1;
   return Math.max(1, Math.min(5, base + edge));
 }
 function tileName(x, y, terrain) {
@@ -293,7 +483,15 @@ export function generateOverworld(seed = SIGMACRAFT_REALM_ID) {
       tiles[tile.id] = tile;
     }
   }
-  return JSON.parse(JSON.stringify({ width: WORLD_MAP_WIDTH, height: WORLD_MAP_HEIGHT, townTileId: "millbridge", tiles, seed: String(seed) }));
+  return JSON.parse(
+    JSON.stringify({
+      width: WORLD_MAP_WIDTH,
+      height: WORLD_MAP_HEIGHT,
+      townTileId: "millbridge",
+      tiles,
+      seed: String(seed),
+    }),
+  );
 }
 
 function npcDisplayName(globalIndex, archetypeKey, seed) {
@@ -305,20 +503,29 @@ function npcTileId(globalIndex, archetype, tiles, seed) {
   const all = Object.values(tiles);
   const candidates = all.filter((t) => {
     if (archetype.key === "bandit") return t.danger >= 3;
-    if (archetype.key === "crafter") return ["forge", "mine", "forest", "village"].includes(t.terrain);
-    if (archetype.key === "merchant") return ["village", "road", "river", "forge"].includes(t.terrain);
-    if (archetype.key === "guard") return ["village", "road", "shrine", "forge"].includes(t.terrain);
+    if (archetype.key === "crafter")
+      return ["forge", "mine", "forest", "village"].includes(t.terrain);
+    if (archetype.key === "merchant")
+      return ["village", "road", "river", "forge"].includes(t.terrain);
+    if (archetype.key === "guard")
+      return ["village", "road", "shrine", "forge"].includes(t.terrain);
     if (archetype.key === "mystic") return ["shrine", "ruins", "woods", "mire"].includes(t.terrain);
     return true;
   });
-  return choose(candidates.length ? candidates : all, `${seed}:${archetype.key}:place:${globalIndex}`).id;
+  return choose(
+    candidates.length ? candidates : all,
+    `${seed}:${archetype.key}:place:${globalIndex}`,
+  ).id;
 }
 function createNpcAgent(archetype, index, globalIndex, tiles, seed) {
   const id = `npc_${archetype.key}_${String(index).padStart(3, "0")}`;
   const name = npcDisplayName(globalIndex, archetype.key, seed);
   const faction = choose(archetype.factions, `${seed}:${id}:faction`);
   const persona = choose(archetype.personas, `${seed}:${id}:persona`);
-  const goals = [choose(archetype.goals, `${seed}:${id}:goal:0`), choose(archetype.goals, `${seed}:${id}:goal:1:${globalIndex}`)];
+  const goals = [
+    choose(archetype.goals, `${seed}:${id}:goal:0`),
+    choose(archetype.goals, `${seed}:${id}:goal:1:${globalIndex}`),
+  ];
   return {
     id,
     name,
@@ -387,7 +594,7 @@ export function createSigmacraftState() {
 // Doubles as the migration for pre-overworld worlds.
 export function seedSigmacraftOverworld(sigmacraft, seed = SIGMACRAFT_REALM_ID) {
   if (!sigmacraft) return sigmacraft;
-  if (!sigmacraft.map || !sigmacraft.map.tiles) sigmacraft.map = generateOverworld(String(seed));
+  if (!sigmacraft.map?.tiles) sigmacraft.map = generateOverworld(String(seed));
   if (!sigmacraft.overworldNpcs || !Object.keys(sigmacraft.overworldNpcs).length) {
     sigmacraft.overworldNpcs = generatePopulation(String(seed), sigmacraft.map.tiles);
   }
@@ -447,7 +654,8 @@ function projectOccupants(sigmacraft, currentTileId, selfToken) {
   for (const npc of Object.values(sigmacraft?.overworldNpcs || {})) {
     if (npc.tileId !== currentTileId) continue;
     const plan = sigmacraft?.npcAgents?.[npc.id]?.plan || null;
-    const objective = plan?.agenda && Array.isArray(plan.agenda) ? plan.agenda[plan.cursor || 0] : null;
+    const objective =
+      plan?.agenda && Array.isArray(plan.agenda) ? plan.agenda[plan.cursor || 0] : null;
     out.push({
       id: npc.id,
       kind: "npc",
@@ -482,7 +690,9 @@ export function sigmacraftValidActions(sigmacraft, currentTileId) {
     if (t) actions.push({ kind: "move", targetId: t.id, label: `Travel to ${t.name}` });
   }
   actions.push({ kind: "rest", label: "Rest" });
-  const localNpc = Object.values(sigmacraft?.overworldNpcs || {}).some((n) => n.tileId === currentTileId);
+  const localNpc = Object.values(sigmacraft?.overworldNpcs || {}).some(
+    (n) => n.tileId === currentTileId,
+  );
   if (localNpc) actions.push({ kind: "talk", label: "Talk with the locals" });
   return actions.slice(0, 24);
 }

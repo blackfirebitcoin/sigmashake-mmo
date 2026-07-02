@@ -18,22 +18,42 @@
 // world stays write-quiescent (PSU power safety; see the NPC lane for the same rule).
 
 import {
+  choose,
   DIRECTOR_BEAT_COOLDOWN_TICKS,
   DIRECTOR_KINDS,
   MAX_DIRECTOR_QUEUE,
-  choose,
   stableIndex,
 } from "../shared/sigmacraft.js";
-import { vDirectorProposals } from "./validate.js";
 import { createLlmClient } from "./llm.js";
+import { vDirectorProposals } from "./validate.js";
 
 // Curated beat tables. `{place}` is filled with a deterministically chosen tile
 // name so the same world-state always yields the same beat text.
 const QUEST_BEATS = [
-  { questId: "ash_shrine", stageId: "ash_shrine_stage_2", title: "Embers at the Ash Shrine", text: "Cold fire flickers on the shrine steps near {place}. Find the keeper before dusk." },
-  { questId: "bandit_tithe", stageId: "bandit_tithe_stage_1", title: "The Bandit Tithe", text: "A warband has set a toll on the roads by {place}. Break it or pay it." },
-  { questId: "deep_hunger", stageId: "deep_hunger_stage_1", title: "The Deep Hunger", text: "Something under {place} has not eaten in a long age, and it is waking." },
-  { questId: "lost_caravan", stageId: "lost_caravan_stage_1", title: "The Lost Caravan", text: "A merchant caravan never reached {place}. Their lantern still burns somewhere." },
+  {
+    questId: "ash_shrine",
+    stageId: "ash_shrine_stage_2",
+    title: "Embers at the Ash Shrine",
+    text: "Cold fire flickers on the shrine steps near {place}. Find the keeper before dusk.",
+  },
+  {
+    questId: "bandit_tithe",
+    stageId: "bandit_tithe_stage_1",
+    title: "The Bandit Tithe",
+    text: "A warband has set a toll on the roads by {place}. Break it or pay it.",
+  },
+  {
+    questId: "deep_hunger",
+    stageId: "deep_hunger_stage_1",
+    title: "The Deep Hunger",
+    text: "Something under {place} has not eaten in a long age, and it is waking.",
+  },
+  {
+    questId: "lost_caravan",
+    stageId: "lost_caravan_stage_1",
+    title: "The Lost Caravan",
+    text: "A merchant caravan never reached {place}. Their lantern still burns somewhere.",
+  },
 ];
 const RUMORS = [
   "Travelers swear the road past {place} glows green after midnight.",
@@ -54,7 +74,9 @@ const SUMMARIES = [
 
 function highDangerTiles(map) {
   const tiles = Object.values(map?.tiles || {});
-  const ranked = tiles.filter((t) => (t.danger || 0) >= 3).sort((a, b) => (b.danger || 0) - (a.danger || 0));
+  const ranked = tiles
+    .filter((t) => (t.danger || 0) >= 3)
+    .sort((a, b) => (b.danger || 0) - (a.danger || 0));
   return ranked.length ? ranked : tiles;
 }
 
@@ -120,7 +142,12 @@ async function callGemma(world, llm) {
   const user =
     `Realm ${s.realmId}, tick ${s.tick || 0}. Current objective: ${s.objective?.title}. ` +
     `High-danger tiles: ${dangerTiles || "none"}. ` +
-    `Recent events: ${(s.recentEvents || []).slice(-4).map((e) => e.text).join(" | ") || "none"}. ` +
+    `Recent events: ${
+      (s.recentEvents || [])
+        .slice(-4)
+        .map((e) => e.text)
+        .join(" | ") || "none"
+    }. ` +
     "Propose ONE bounded public beat that keeps the realm legible and tense.";
   const reply = await llm.chat({ system, user, json: true, maxTokens: 300 });
   const kind = DIRECTOR_KINDS.includes(reply?.kind) ? reply.kind : "rumor";
@@ -161,16 +188,17 @@ export function attachDirector({ store, env = process.env, llm = createLlmClient
     // Pacing: don't pile up. Skip when the queue is full or a fresh beat was
     // proposed within the cooldown window (keeps feed writes bounded).
     if (s.directorQueue.length >= MAX_DIRECTOR_QUEUE) return false;
-    if (s.directorQueue.length > 0 && tick - (s.gameMaster.lastBeatTick || 0) < DIRECTOR_BEAT_COOLDOWN_TICKS) {
+    if (
+      s.directorQueue.length > 0 &&
+      tick - (s.gameMaster.lastBeatTick || 0) < DIRECTOR_BEAT_COOLDOWN_TICKS
+    ) {
       return false;
     }
 
     let proposal = null;
     try {
       proposal =
-        live && llm.available()
-          ? await callGemma(world, llm)
-          : makeDirectorFallbackProposal(world);
+        live && llm.available() ? await callGemma(world, llm) : makeDirectorFallbackProposal(world);
     } catch {
       proposal = makeDirectorFallbackProposal(world); // hard fallback on any model failure
     }

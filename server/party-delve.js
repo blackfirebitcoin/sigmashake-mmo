@@ -33,12 +33,14 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
   const tileId = s.actorPlaces?.[token] || s.map.townTileId;
   const tile = s.map.tiles?.[tileId];
   if (!tile) return { ok: false, error: "unknown tile" };
-  if (tile.type !== "dungeon") return { ok: false, error: "not at a dungeon — travel to a dungeon tile first" };
+  if (tile.type !== "dungeon")
+    return { ok: false, error: "not at a dungeon — travel to a dungeon tile first" };
 
   // Always materialize the leader's party record (even solo) so per-tile cooldowns
   // + delve history are tracked authoritatively.
   s.parties = s.parties || {};
-  const party = s.parties[token] || (s.parties[token] = { leaderToken: token, members: [], status: "forming" });
+  if (!s.parties[token]) s.parties[token] = { leaderToken: token, members: [], status: "forming" };
+  const party = s.parties[token];
   ensureDemoRun(character);
   if (character?.run && character.run.alive === false) {
     return { ok: false, error: "your hero has fallen — mint a new playtest run to delve again" };
@@ -49,7 +51,8 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
   // faucet. Keyed by tile id for EVERY cleared dungeon (an A→B→A rotation can't
   // re-farm A). A re-mint (new token) legitimately starts fresh.
   s.delveCooldowns = s.delveCooldowns || {};
-  const cooldowns = s.delveCooldowns[token] || (s.delveCooldowns[token] = {});
+  if (!s.delveCooldowns[token]) s.delveCooldowns[token] = {};
+  const cooldowns = s.delveCooldowns[token];
   const clearedAt = cooldowns[tileId];
   if (Number.isFinite(clearedAt) && (s.tick || 0) - clearedAt < DELVE_COOLDOWN_TICKS) {
     return { ok: false, error: "this dungeon is freshly cleared — its spoils won't respawn yet" };
@@ -69,7 +72,15 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
     if (!playerResult.alive) character.run.alive = false;
   }
 
-  const loot = rollPartyLoot({ result, builtEnemies: enemies, party: combatants, level, depth, seed, bossDrops });
+  const loot = rollPartyLoot({
+    result,
+    builtEnemies: enemies,
+    party: combatants,
+    level,
+    depth,
+    seed,
+    bossDrops,
+  });
 
   // Attach the PLAYER's drops to their inventory (bounded). NPC drops are flavor in
   // the result (recruited NPCs have no persistent inventory in this demo).
@@ -92,7 +103,12 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
     rounds: result.rounds,
     tile: tile.name,
     kills: result.kills.length,
-    drops: loot.drops.map((d) => ({ to: d.memberName, item: d.item?.name || "loot", rarity: d.item?.rarity, fromBoss: d.fromBoss })),
+    drops: loot.drops.map((d) => ({
+      to: d.memberName,
+      item: d.item?.name || "loot",
+      rarity: d.item?.rarity,
+      fromBoss: d.fromBoss,
+    })),
     at: s.tick || 0,
   };
   if (result.outcome === "victory") {
@@ -105,7 +121,11 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
     cooldowns[tileId] = nowTick; // disband-proof ledger
   }
   party.status = result.outcome === "victory" ? "done" : "forming";
-  store?.pushFeed?.({ kind: "narrative", name: "Dungeon", detail: `Party ${result.outcome} in ${tile.name} (${result.kills.length} slain, ${kept} loot to the leader).` });
+  store?.pushFeed?.({
+    kind: "narrative",
+    name: "Dungeon",
+    detail: `Party ${result.outcome} in ${tile.name} (${result.kills.length} slain, ${kept} loot to the leader).`,
+  });
 
   return {
     ok: true,
@@ -116,6 +136,16 @@ export function runPartyDelve({ world, store, token, character, bossDrops = null
     party: result.party,
     enemies: result.enemies,
     log: result.log,
-    loot: loot.drops.map((d) => ({ to: d.memberName, isPlayer: d.isPlayer, fromBoss: d.fromBoss, item: { name: d.item?.name, rarity: d.item?.rarity, slot: d.item?.slot, effect: d.item?.effect } })),
+    loot: loot.drops.map((d) => ({
+      to: d.memberName,
+      isPlayer: d.isPlayer,
+      fromBoss: d.fromBoss,
+      item: {
+        name: d.item?.name,
+        rarity: d.item?.rarity,
+        slot: d.item?.slot,
+        effect: d.item?.effect,
+      },
+    })),
   };
 }

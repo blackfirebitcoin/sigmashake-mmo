@@ -34,6 +34,19 @@ import {
 import { REAGENT_CODES } from "../shared/crafting.js";
 import { DISEASE_IDS } from "../shared/diseases.js";
 import { FACTION_IDS, FACTION_MAX_REP } from "../shared/factions.js";
+import { BODY_PART_IDS } from "../shared/health.js";
+import { INSPIRATION_IDS } from "../shared/inspirations.js";
+import { SET_IDS } from "../shared/item-sets.js";
+import { LORE_FLAVOR_MAX, VAULT_MAX_CAPACITY } from "../shared/market.js";
+import { BREAK_IDS } from "../shared/mental-breaks.js";
+import { NPC_IDS } from "../shared/npc-defs.js";
+import {
+  CLASS_START_IDS,
+  PASSIVE_NODE_COUNT,
+  passivePointsFor,
+  pruneToConnected,
+} from "../shared/passive-tree.js";
+import { QUEST_MAX_ACTIVE, QUEST_TEMPLATE_IDS } from "../shared/quests.js";
 import {
   DIRECTOR_ID_MAX,
   DIRECTOR_KINDS,
@@ -50,19 +63,6 @@ import {
   NPC_SUMMARY_MAX,
   SIGMACRAFT_INTENT_KINDS,
 } from "../shared/sigmacraft.js";
-import { BODY_PART_IDS } from "../shared/health.js";
-import { INSPIRATION_IDS } from "../shared/inspirations.js";
-import { SET_IDS } from "../shared/item-sets.js";
-import { LORE_FLAVOR_MAX, VAULT_MAX_CAPACITY } from "../shared/market.js";
-import { BREAK_IDS } from "../shared/mental-breaks.js";
-import { NPC_IDS } from "../shared/npc-defs.js";
-import {
-  CLASS_START_IDS,
-  PASSIVE_NODE_COUNT,
-  passivePointsFor,
-  pruneToConnected,
-} from "../shared/passive-tree.js";
-import { QUEST_MAX_ACTIVE, QUEST_TEMPLATE_IDS } from "../shared/quests.js";
 import { TALENT_IDS } from "../shared/skill-talents.js";
 import {
   RESERVABLE_SKILL_IDS,
@@ -227,10 +227,17 @@ export function vSigmacraftIntent(x) {
 export function vNpcMemory(x) {
   const o = x && typeof x === "object" ? x : {};
   return {
-    goals: vArr(o.goals, (g) => ({ text: vStr(asObj(g).text, NPC_GOAL_TEXT_MAX, "") }), MAX_NPC_AGENT_GOALS),
+    goals: vArr(
+      o.goals,
+      (g) => ({ text: vStr(asObj(g).text, NPC_GOAL_TEXT_MAX, "") }),
+      MAX_NPC_AGENT_GOALS,
+    ),
     recentIncidents: vArr(
       o.recentIncidents,
-      (i) => ({ summary: vStr(asObj(i).summary, NPC_DIALOGUE_MAX, ""), tick: vInt(asObj(i).tick, 0, 1e9, 0) }),
+      (i) => ({
+        summary: vStr(asObj(i).summary, NPC_DIALOGUE_MAX, ""),
+        tick: vInt(asObj(i).tick, 0, 1e9, 0),
+      }),
       MAX_NPC_AGENT_INCIDENTS,
     ),
     summaryPointer: vStr(o.summaryPointer, NPC_SUMMARY_MAX, ""),

@@ -18,7 +18,9 @@ function trackingStore(world) {
   let puts = 0;
   return {
     getWorldState: () => world,
-    putWorldState: () => { puts += 1; },
+    putWorldState: () => {
+      puts += 1;
+    },
     pushFeed: () => {},
     puts: () => puts,
   };
@@ -88,7 +90,10 @@ describe("Director loop + tick consume", () => {
     assert.notEqual(w.sigmacraft.objective.title, before);
     assert.equal(w.sigmacraft.directorQueue.length, 0, "beat consumed");
     assert.equal(w.sigmacraft.gameMaster.beats, 1);
-    assert.ok(store.feed.some((e) => /Director:/.test(e.detail || "")), "beat surfaced to the feed");
+    assert.ok(
+      store.feed.some((e) => /Director:/.test(e.detail || "")),
+      "beat surfaced to the feed",
+    );
   });
 
   test("pacing: a second immediate propose() within the cooldown is skipped", async () => {

@@ -43,11 +43,19 @@ describe("ambient NPC churn does not write players.json / feed.json", () => {
     for (let c = 0; c < 4; c++) {
       await planner.plan();
       for (let t = 0; t < 6; t++) {
-        assert.equal(advance({ world: store.getWorldState(), store }), false, "an NPC-only tick must not be dirty");
+        assert.equal(
+          advance({ world: store.getWorldState(), store }),
+          false,
+          "an NPC-only tick must not be dirty",
+        );
       }
       store.flush();
     }
-    assert.equal(mtime("players.json"), players0, "players.json NOT rewritten by ambient NPC churn");
+    assert.equal(
+      mtime("players.json"),
+      players0,
+      "players.json NOT rewritten by ambient NPC churn",
+    );
     assert.equal(mtime("feed.json"), feed0, "feed.json NOT rewritten by ambient NPC churn");
 
     // A genuine (persist) feed event MUST still reach disk — the ephemeral path

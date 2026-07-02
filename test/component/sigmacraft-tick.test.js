@@ -91,6 +91,10 @@ describe("Sigmacraft tick — real supervised-loop integration", () => {
     const epochBefore = store.getWorldState().epoch;
     for (let i = 0; i < 20; i++) driveTick();
     const epochAfter = store.getWorldState().epoch;
-    assert.equal(epochAfter - epochBefore, 1, "legacy core tick advances epoch once per 20 base ticks");
+    assert.equal(
+      epochAfter - epochBefore,
+      1,
+      "legacy core tick advances epoch once per 20 base ticks",
+    );
   });
 });

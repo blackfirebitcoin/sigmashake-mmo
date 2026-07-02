@@ -127,7 +127,7 @@ describe("D3 — autonomous boss attack damage bounds", () => {
   }
 
   test("goblin_king autonomous attack never exceeds 3x base attack", () => {
-    const def = ENEMIES["goblin_king"];
+    const def = ENEMIES.goblin_king;
     const scale = 0.35;
     const base = Math.max(6, Math.round((def.attack || 10) * scale));
     const maxExpected = base + Math.round(base * 0.5); // max possible
@@ -1192,7 +1192,10 @@ describe("CHANGE 2 — gear auras (source inspection)", () => {
     const foesOnlyReturn = body.indexOf("if (FOES_ONLY) return null;");
     const avatarCompose = body.indexOf("composeAvatar(");
     assert.ok(foesOnlyReturn >= 0, "drawChatter must still return early in FOES_ONLY");
-    assert.ok(avatarCompose >= 0, "drawChatter must still compose the chatter avatar outside FOES_ONLY");
+    assert.ok(
+      avatarCompose >= 0,
+      "drawChatter must still compose the chatter avatar outside FOES_ONLY",
+    );
     assert.ok(
       foesOnlyReturn < avatarCompose,
       "drawChatter must skip avatar composition before composeAvatar() in FOES_ONLY",

@@ -4,7 +4,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { vNpcAgenda, vNpcProposal, vNpcProposals, vTileId, vNpcAgentId } from "../../server/validate.js";
+import {
+  vNpcAgenda,
+  vNpcAgentId,
+  vNpcProposal,
+  vNpcProposals,
+  vTileId,
+} from "../../server/validate.js";
 
 const base = (over = {}) => ({
   npcId: "npc_adventurer_000",
@@ -52,7 +58,10 @@ describe("vNpcAgenda — the strategic plan boundary", () => {
       { kind: "rest" }, // good
     ]);
     assert.equal(a.length, 2, "only the two valid objectives survive");
-    assert.deepEqual(a.map((o) => o.kind), ["gather", "rest"]);
+    assert.deepEqual(
+      a.map((o) => o.kind),
+      ["gather", "rest"],
+    );
   });
 
   test("caps the agenda length", () => {
@@ -74,14 +83,18 @@ describe("vNpcProposal rejects what the model must not assert", () => {
   });
 
   test("a 200-proposal batch is not truncated", () => {
-    const batch = Array.from({ length: 200 }, (_, i) => base({ npcId: `npc_adventurer_${String(i % 1000).padStart(3, "0")}` }));
+    const batch = Array.from({ length: 200 }, (_, i) =>
+      base({ npcId: `npc_adventurer_${String(i % 1000).padStart(3, "0")}` }),
+    );
     assert.equal(vNpcProposals(batch).length, 200);
   });
 });
 
 describe("vNpcProposal bounds + scrubs", () => {
   test("dialogueLine capped to 140, currentGoal to 96", () => {
-    const clean = vNpcProposal(base({ dialogueLine: "z".repeat(300), currentGoal: "g".repeat(300) }));
+    const clean = vNpcProposal(
+      base({ dialogueLine: "z".repeat(300), currentGoal: "g".repeat(300) }),
+    );
     assert.equal(clean.dialogueLine.length, 140);
     assert.equal(clean.currentGoal.length, 96);
   });
