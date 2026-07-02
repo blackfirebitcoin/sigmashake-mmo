@@ -5,11 +5,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  createSigmacraftState,
   generateOverworld,
   generatePopulation,
-  seedSigmacraftOverworld,
-  createSigmacraftState,
   NPC_POPULATION_TARGET,
+  seedSigmacraftOverworld,
 } from "../../shared/sigmacraft.js";
 
 describe("generateOverworld", () => {
@@ -48,7 +48,10 @@ describe("generatePopulation", () => {
   const pop = generatePopulation("sigmacraft_alpha", tiles);
 
   test("is byte-identical across runs", () => {
-    assert.equal(JSON.stringify(pop), JSON.stringify(generatePopulation("sigmacraft_alpha", tiles)));
+    assert.equal(
+      JSON.stringify(pop),
+      JSON.stringify(generatePopulation("sigmacraft_alpha", tiles)),
+    );
   });
 
   test("has exactly 200 agents with well-formed ids on real tiles", () => {

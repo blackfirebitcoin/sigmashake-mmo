@@ -6,8 +6,8 @@
 // Covered: GET /healthz, GET /api/leaderboard, GET /api/stats, GET /api/feed.
 
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, test } from "node:test";
@@ -25,12 +25,14 @@ process.env.MMO_DATA_DIR = STORE_DIR;
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "../../server/router.js";
+
 // store is imported DYNAMICALLY in before() so it reads MMO_DATA_DIR (set above).
 let store;
-import { freshWorld } from "../../server/world-tick.js";
+
 import { enqueueSigmacraftIntent } from "../../server/sigmacraft.js";
-import { projectSigmacraftSnapshot } from "../../shared/sigmacraft.js";
 import { vSigmacraftIntent } from "../../server/validate.js";
+import { freshWorld } from "../../server/world-tick.js";
+import { projectSigmacraftSnapshot } from "../../shared/sigmacraft.js";
 import { TOWN_ID } from "../../shared/zones.js";
 
 // We build a minimal app mirroring the routes we want to test, using the
@@ -85,7 +87,10 @@ before(async () => {
     const qs = (req.url || "").split("?")[1] || "";
     const token = String(new URLSearchParams(qs).get("token") || "").slice(0, 64);
     const character = token ? store.getPlayer(token)?.character || null : null;
-    json(res, { ok: true, snapshot: projectSigmacraftSnapshot(store.getWorldState(), character, { token }) });
+    json(res, {
+      ok: true,
+      snapshot: projectSigmacraftSnapshot(store.getWorldState(), character, { token }),
+    });
   });
 
   app.post("/api/sigmacraft/intent", (req, res) => {
@@ -102,7 +107,11 @@ before(async () => {
     const world = store.getWorldState();
     const result = enqueueSigmacraftIntent(world, token, intent);
     store.putWorldState(world);
-    return json(res, { ok: result.status !== "rejected", ...result }, result.status === "rejected" ? 409 : 200);
+    return json(
+      res,
+      { ok: result.status !== "rejected", ...result },
+      result.status === "rejected" ? 409 : 200,
+    );
   });
 
   httpServer = createServer(app);
@@ -176,7 +185,9 @@ describe("GET /api/sigmacraft/snapshot", () => {
   });
 
   test("token-scoped returns valid actions for the player", async () => {
-    const res = await fetch(`${baseUrl}/api/sigmacraft/snapshot?token=sig_aaaaaaaaaaaaaaaaaaaaaaaa`);
+    const res = await fetch(
+      `${baseUrl}/api/sigmacraft/snapshot?token=sig_aaaaaaaaaaaaaaaaaaaaaaaa`,
+    );
     const j = await res.json();
     assert.ok(j.snapshot.validActions.length > 0);
     assert.ok(j.snapshot.validActions.some((a) => a.kind === "rest"));

@@ -83,7 +83,11 @@ export function parseJsonReply(text) {
   }
 }
 
-export function createLlmClient({ env = process.env, fetchImpl = globalThis.fetch, now = () => Date.now() } = {}) {
+export function createLlmClient({
+  env = process.env,
+  fetchImpl = globalThis.fetch,
+  now = () => Date.now(),
+} = {}) {
   const apiKey = env.CEREBRAS_API_KEY || "";
   const baseUrl = (env.CEREBRAS_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
   const model = env.CEREBRAS_MODEL || DEFAULT_MODEL;
@@ -140,7 +144,9 @@ export function createLlmClient({ env = process.env, fetchImpl = globalThis.fetc
           });
         } catch (err) {
           recordFailure();
-          throw new Error(`llm request failed: ${err?.name === "AbortError" ? "timeout" : "network"}`);
+          throw new Error(
+            `llm request failed: ${err?.name === "AbortError" ? "timeout" : "network"}`,
+          );
         }
         if (!res.ok) {
           recordFailure();
@@ -167,7 +173,12 @@ export function createLlmClient({ env = process.env, fetchImpl = globalThis.fetc
     },
     // test/diagnostic surface — never includes the key
     _stats() {
-      return { consecutiveFails, breakerOpen: breakerOpen(), inFlight: sem.inFlight, hasKey: Boolean(apiKey) };
+      return {
+        consecutiveFails,
+        breakerOpen: breakerOpen(),
+        inFlight: sem.inFlight,
+        hasKey: Boolean(apiKey),
+      };
     },
   };
 }

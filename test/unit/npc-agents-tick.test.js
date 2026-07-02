@@ -22,7 +22,14 @@ const npcIds = (w) => Object.keys(w.sigmacraft.overworldNpcs).sort();
 function agendaHere(w, id, kind) {
   const rec = w.sigmacraft.overworldNpcs[id];
   w.sigmacraft.npcAgents[id] = {
-    plan: { goal: "g", agenda: [{ kind, targetTileId: rec.tileId }], cursor: 0, dialogueLine: "hi", source: "fallback", plannedAtTick: 0 },
+    plan: {
+      goal: "g",
+      agenda: [{ kind, targetTileId: rec.tileId }],
+      cursor: 0,
+      dialogueLine: "hi",
+      source: "fallback",
+      plannedAtTick: 0,
+    },
     memory: { goals: [], recentIncidents: [], summaryPointer: "" },
   };
   return rec;
@@ -93,12 +100,22 @@ describe("advance() cascades NPC agendas, bounded + ambient", () => {
       (t) => t !== start && !w.sigmacraft.map.tiles[start].exits.includes(t),
     );
     w.sigmacraft.npcAgents[id] = {
-      plan: { goal: "g", agenda: [{ kind: "move", targetTileId: far }], cursor: 0, dialogueLine: "", source: "fallback", plannedAtTick: 0 },
+      plan: {
+        goal: "g",
+        agenda: [{ kind: "move", targetTileId: far }],
+        cursor: 0,
+        dialogueLine: "",
+        source: "fallback",
+        plannedAtTick: 0,
+      },
       memory: { goals: [], recentIncidents: [], summaryPointer: "" },
     };
     advance({ world: w, store: feedStore() });
     assert.notEqual(rec.tileId, far, "did not teleport to the far tile");
-    assert.ok(w.sigmacraft.map.tiles[start].exits.includes(rec.tileId), "moved to an adjacent tile toward the target");
+    assert.ok(
+      w.sigmacraft.map.tiles[start].exits.includes(rec.tileId),
+      "moved to an adjacent tile toward the target",
+    );
   });
 
   test("applies at most MAX_NPC_EFFECTS_PER_TICK effects per tick", () => {

@@ -178,7 +178,7 @@ async function refresh() {
 }
 async function act(intent) {
   if (!token) return;
-  $("pending").textContent = `… ${intent.kind}${intent.targetId ? " → " + intent.targetId : ""} (resolving next tick)`;
+  $("pending").textContent = `… ${intent.kind}${intent.targetId ? ` → ${intent.targetId}` : ""} (resolving next tick)`;
   try {
     await fetch("/api/sigmacraft/intent", {
       method: "POST", headers: { "content-type": "application/json" },
@@ -219,7 +219,7 @@ function render_map() {
     const cell = document.createElement("div");
     const reachable = reach.has(t.id);
     const current = t.id === curId;
-    cell.className = "map-cell" + (current ? " current" : "") + (reachable ? " exit" : "");
+    cell.className = `map-cell${current ? " current" : ""}${reachable ? " exit" : ""}`;
     cell.style.background = TYPE_COLOR[t.type] || "#2c4a36";
     cell.title = `${t.name} · ${t.type} · danger ${t.danger}`;
     const n = counts[t.id] || 0;
@@ -243,7 +243,7 @@ function render_side() {
   const wrap = $("actions"); wrap.innerHTML = "";
   for (const a of (snap?.validActions || [])) {
     const b = document.createElement("button");
-    b.className = "act" + (a.kind === "rest" ? " rest" : "");
+    b.className = `act${a.kind === "rest" ? " rest" : ""}`;
     b.textContent = a.label || a.kind;
     b.onclick = () => act({ kind: a.kind, targetId: a.targetId });
     wrap.appendChild(b);
@@ -261,7 +261,7 @@ function render_side() {
   render_tavern();
   render_dungeon();
   $("pending").textContent = snap?.pendingIntent
-    ? `… ${snap.pendingIntent.kind}${snap.pendingIntent.targetId ? " → " + snap.pendingIntent.targetId : ""} (queued)` : "";
+    ? `… ${snap.pendingIntent.kind}${snap.pendingIntent.targetId ? ` → ${snap.pendingIntent.targetId}` : ""} (queued)` : "";
   const evs = (snap?.recentEvents || []).slice().reverse();
   $("events").innerHTML = evs.length
     ? evs.map(e => `<li><span class="t">t${e.tick}</span>${e.text}</li>`).join("")
@@ -281,14 +281,14 @@ function render_tavern() {
     `<div class="party-hd">Party (${members.length}/4)${party?.status && party.status !== "forming" ? ` · <span class="dim">${party.status}</span>` : ""}` +
     (members.length ? ` <button class="act tiny" id="btn-disband">Disband</button>` : "") + `</div>` +
     (members.length
-      ? `<ul class="party-list">` + members.map(m => `<li>⚔ <b>${m.name}</b> <span class="dim">${m.archetype || ""}</span></li>`).join("") + `</ul>`
+      ? `<ul class="party-list">${members.map(m => `<li>⚔ <b>${m.name}</b> <span class="dim">${m.archetype || ""}</span></li>`).join("")}</ul>`
       : `<div class="dim">No party yet — recruit some locals below.</div>`);
   if (members.length) $("btn-disband").onclick = () => act({ kind: "disband" });
 
   const recruits = (snap?.occupants || []).filter(o => o.kind === "npc" && o.recruitable);
   $("recruits").innerHTML = recruits.length
-    ? `<div class="dim" style="margin:.4rem 0 .2rem">Available to hire:</div>` + recruits.map(o =>
-        `<button class="act recruit" data-id="${o.id}">+ ${o.name} <span class="dim">(${o.archetype || "?"})</span></button>`).join(" ")
+    ? `<div class="dim" style="margin:.4rem 0 .2rem">Available to hire:</div>${recruits.map(o =>
+        `<button class="act recruit" data-id="${o.id}">+ ${o.name} <span class="dim">(${o.archetype || "?"})</span></button>`).join(" ")}`
     : (members.length ? "" : `<div class="dim">No free hands here right now.</div>`);
   for (const b of $("recruits").querySelectorAll("button.recruit")) {
     b.onclick = () => act({ kind: "recruit", targetNpcId: b.dataset.id });

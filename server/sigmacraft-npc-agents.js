@@ -15,14 +15,14 @@
 // re-checks tile existence/adjacency, so a hallucinated agenda can never teleport.
 
 import {
+  choose,
   MAX_NPC_AGENDA_STEPS,
   MAX_NPC_AGENT_GOALS,
   MAX_NPC_AGENT_INCIDENTS,
-  choose,
   tileSupportsAction,
 } from "../shared/sigmacraft.js";
-import { vNpcProposals } from "./validate.js";
 import { createLlmClient } from "./llm.js";
+import { vNpcProposals } from "./validate.js";
 
 // FNV-1a — deterministic, zero-IO seed from a string.
 function stableHash(str) {
@@ -37,13 +37,41 @@ function stableHash(str) {
 
 // Deterministic ambient lines per archetype (no Date/Math.random). <=140 chars.
 const ARCHETYPE_LINES = {
-  adventurer: ["Trouble on the road? Point me at it.", "Renown won't earn itself.", "Stay close — the reaches bite."],
-  crafter: ["Good steel takes patience.", "I need better ore than this.", "A work order won't fill itself."],
-  bandit: ["Mind your purse on this road.", "Patrols are thin tonight.", "This shortcut belongs to us."],
-  merchant: ["Fair prices for honest coin.", "I need guards before the roads close.", "Buy low, friend — the toll's rising."],
-  guard: ["Move along, keep the road clear.", "Bandit sign near the crossing.", "The watch holds — for now."],
-  scout: ["Danger two ridges east.", "I read weather and worse.", "Follow my markers, not the easy path."],
-  mystic: ["The omens are uneasy.", "Old spirits stir near the shrine.", "A riddle for safe passage?"],
+  adventurer: [
+    "Trouble on the road? Point me at it.",
+    "Renown won't earn itself.",
+    "Stay close — the reaches bite.",
+  ],
+  crafter: [
+    "Good steel takes patience.",
+    "I need better ore than this.",
+    "A work order won't fill itself.",
+  ],
+  bandit: [
+    "Mind your purse on this road.",
+    "Patrols are thin tonight.",
+    "This shortcut belongs to us.",
+  ],
+  merchant: [
+    "Fair prices for honest coin.",
+    "I need guards before the roads close.",
+    "Buy low, friend — the toll's rising.",
+  ],
+  guard: [
+    "Move along, keep the road clear.",
+    "Bandit sign near the crossing.",
+    "The watch holds — for now.",
+  ],
+  scout: [
+    "Danger two ridges east.",
+    "I read weather and worse.",
+    "Follow my markers, not the easy path.",
+  ],
+  mystic: [
+    "The omens are uneasy.",
+    "Old spirits stir near the shrine.",
+    "A riddle for safe passage?",
+  ],
 };
 function archetypeLine(rec, seed) {
   const pool = ARCHETYPE_LINES[rec?.archetype] || ["..."];
@@ -97,7 +125,10 @@ function targetTileForAction(tiles, fromTile, kind, seed) {
 function buildFallbackAgenda(rec, tiles, seed) {
   const here = tiles[rec.tileId];
   const seq = (ARCHETYPE_AGENDA[rec?.archetype] || ["talk", "rest"]).slice(0, MAX_NPC_AGENDA_STEPS);
-  return seq.map((kind, i) => ({ kind, targetTileId: targetTileForAction(tiles, here, kind, `${seed}:${i}`) }));
+  return seq.map((kind, i) => ({
+    kind,
+    targetTileId: targetTileForAction(tiles, here, kind, `${seed}:${i}`),
+  }));
 }
 
 // Pure given (npcId, world) — the always-on default. No Date/Math.random.
@@ -143,7 +174,8 @@ function mergePlan(existing, clean, tick) {
     memory: {
       goals: clean.memoryPatch.goals.slice(0, MAX_NPC_AGENT_GOALS),
       recentIncidents: incidents,
-      summaryPointer: clean.memoryPatch.summaryPointer || prevMem.summaryPointer || `${clean.npcId}#rolling`,
+      summaryPointer:
+        clean.memoryPatch.summaryPointer || prevMem.summaryPointer || `${clean.npcId}#rolling`,
     },
   };
 }
@@ -193,18 +225,18 @@ async function callGemma(npcId, world, llm) {
   const reply = await llm.chat({ system, user, json: true, maxTokens: 320 });
   const tick = s.tick || 0;
   const rawAgenda = Array.isArray(reply?.agenda) ? reply.agenda : [];
-  const agenda = rawAgenda
-    .slice(0, MAX_NPC_AGENDA_STEPS)
-    .map((o) => {
-      const kind = o?.action;
-      const targetTileId = o?.target;
-      const step = { kind };
-      if (typeof targetTileId === "string" && tiles[targetTileId]) step.targetTileId = targetTileId;
-      return step;
-    });
+  const agenda = rawAgenda.slice(0, MAX_NPC_AGENDA_STEPS).map((o) => {
+    const kind = o?.action;
+    const targetTileId = o?.target;
+    const step = { kind };
+    if (typeof targetTileId === "string" && tiles[targetTileId]) step.targetTileId = targetTileId;
+    return step;
+  });
   const goal = String(reply?.goal || goalFor(rec, tick)).slice(0, 96);
   // If the model gave nothing usable, fall back to a grounded agenda.
-  const finalAgenda = agenda.length ? agenda : buildFallbackAgenda(rec, tiles, stableHash(`${npcId}:${tick}`));
+  const finalAgenda = agenda.length
+    ? agenda
+    : buildFallbackAgenda(rec, tiles, stableHash(`${npcId}:${tick}`));
   return {
     npcId,
     currentGoal: goal,
@@ -221,10 +253,19 @@ async function callGemma(npcId, world, llm) {
 
 // Does this agent still have an agenda to pursue? (cursor not yet past the end)
 function agendaInProgress(plan) {
-  return !!plan?.agenda && Array.isArray(plan.agenda) && Number.isFinite(plan.cursor) && plan.cursor < plan.agenda.length;
+  return (
+    !!plan?.agenda &&
+    Array.isArray(plan.agenda) &&
+    Number.isFinite(plan.cursor) &&
+    plan.cursor < plan.agenda.length
+  );
 }
 
-export function attachNpcPlanner({ store, env = process.env, llm = createLlmClient({ env }) } = {}) {
+export function attachNpcPlanner({
+  store,
+  env = process.env,
+  llm = createLlmClient({ env }),
+} = {}) {
   const live = env.NPC_PLANNER_LIVE === "1";
   const envMax = Number(env.SIGMACRAFT_NPC_MAX_PER_CYCLE);
 
@@ -240,7 +281,7 @@ export function attachNpcPlanner({ store, env = process.env, llm = createLlmClie
     }
     if (!proposal) return false;
     const clean = vNpcProposals([proposal])[0]; // trust boundary; drops if malformed
-    if (!clean || !clean.agenda.length) return false; // an empty agenda is no plan
+    if (!clean?.agenda.length) return false; // an empty agenda is no plan
     const s = world.sigmacraft;
     s.npcAgents[clean.npcId] = mergePlan(s.npcAgents[clean.npcId], clean, s.tick || 0);
     return true;

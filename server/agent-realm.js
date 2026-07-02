@@ -461,12 +461,17 @@ export function attachAgentRealm(app, { store, rt, guard }) {
             res.status(409).json({ error: result.reason || "rejected" });
             return;
           }
-          finish({ sigmacraft: result }, cooldownObject(ch, AGENT_COOLDOWN.sigmacraft ?? AGENT_COOLDOWN.move));
+          finish(
+            { sigmacraft: result },
+            cooldownObject(ch, AGENT_COOLDOWN.sigmacraft ?? AGENT_COOLDOWN.move),
+          );
           return;
         }
 
         default:
-          res.status(400).json({ error: `unknown action; valid: move|fight|gather|rest|craft|sigmacraft` });
+          res
+            .status(400)
+            .json({ error: `unknown action; valid: move|fight|gather|rest|craft|sigmacraft` });
       }
     }),
   );

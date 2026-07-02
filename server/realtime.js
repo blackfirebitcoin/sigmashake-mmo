@@ -17,12 +17,12 @@ import {
   WS_RATE,
 } from "../shared/constants.js";
 import { projectSigmacraftSnapshot } from "../shared/sigmacraft.js";
-import { vcsAccountForToken } from "./vcs-bridge.js";
 import * as arena from "./arena.js";
 import * as drops from "./drops.js";
 import * as store from "./store.js";
 import { guard } from "./supervisor.js";
 import { parseMessage, ValidationError } from "./validate.js";
+import { vcsAccountForToken } from "./vcs-bridge.js";
 
 function newToken() {
   return `sig_${crypto.randomBytes(12).toString("hex")}`; // sig_ + 24 hex

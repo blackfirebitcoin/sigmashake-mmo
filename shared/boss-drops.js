@@ -63,7 +63,12 @@ export function enrichBossDrop(base, raw) {
   if (Array.isArray(r.affixes)) {
     const proposedByStat = new Map();
     for (const a of r.affixes) {
-      if (a && typeof a.stat === "string" && typeof a.value === "number" && Number.isFinite(a.value)) {
+      if (
+        a &&
+        typeof a.stat === "string" &&
+        typeof a.value === "number" &&
+        Number.isFinite(a.value)
+      ) {
         proposedByStat.set(a.stat, a.value);
       }
     }

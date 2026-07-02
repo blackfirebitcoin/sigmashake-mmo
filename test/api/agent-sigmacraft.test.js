@@ -3,8 +3,8 @@
 // Run: node --test test/api/agent-sigmacraft.test.js
 
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, test } from "node:test";
@@ -12,11 +12,11 @@ import { after, before, describe, test } from "node:test";
 const STORE_DIR = mkdtempSync(join(tmpdir(), "mmo-agent-sc-"));
 process.env.MMO_DATA_DIR = STORE_DIR;
 
-import express from "../../server/router.js";
-import { guard } from "../../server/supervisor.js";
 import { attachAgentRealm } from "../../server/agent-realm.js";
-import { freshWorld } from "../../server/world-tick.js";
+import express from "../../server/router.js";
 import { advance } from "../../server/sigmacraft.js";
+import { guard } from "../../server/supervisor.js";
+import { freshWorld } from "../../server/world-tick.js";
 
 let store;
 let baseUrl = "";
@@ -38,7 +38,11 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${httpServer.address().port}`;
 
   const reg = await (
-    await fetch(`${baseUrl}/api/agent/register`, { method: "POST", headers: headers(), body: JSON.stringify({ name: "scout_bot" }) })
+    await fetch(`${baseUrl}/api/agent/register`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ name: "scout_bot" }),
+    })
   ).json();
   agentToken = reg.token;
   assert.ok(agentToken?.startsWith("agt_"));
@@ -100,7 +104,11 @@ describe("POST /api/agent/action/sigmacraft", () => {
   test("a malformed intent is rejected by the validate boundary (400)", async () => {
     // fresh agent to dodge the cooldown from the previous test
     const reg = await (
-      await fetch(`${baseUrl}/api/agent/register`, { method: "POST", headers: headers(), body: JSON.stringify({ name: "scout_bot2" }) })
+      await fetch(`${baseUrl}/api/agent/register`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ name: "scout_bot2" }),
+      })
     ).json();
     const res = await fetch(`${baseUrl}/api/agent/action/sigmacraft`, {
       method: "POST",

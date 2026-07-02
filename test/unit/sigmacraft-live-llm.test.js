@@ -6,17 +6,32 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-
-import { attachNpcPlanner } from "../../server/sigmacraft-npc-agents.js";
 import { attachDirector } from "../../server/sigmacraft-director.js";
+import { attachNpcPlanner } from "../../server/sigmacraft-npc-agents.js";
 import { freshWorld } from "../../server/world-tick.js";
 
-const fakeStore = (world) => ({ getWorldState: () => world, putWorldState: () => {}, pushFeed: () => {} });
+const fakeStore = (world) => ({
+  getWorldState: () => world,
+  putWorldState: () => {},
+  pushFeed: () => {},
+});
 const okLlm = (reply) => ({ available: () => true, chat: async () => reply });
-const throwingLlm = () => ({ available: () => true, chat: async () => { throw new Error("boom"); } });
+const throwingLlm = () => ({
+  available: () => true,
+  chat: async () => {
+    throw new Error("boom");
+  },
+});
 const unavailableLlm = () => {
   let called = false;
-  return { available: () => false, chat: async () => { called = true; return {}; }, wasCalled: () => called };
+  return {
+    available: () => false,
+    chat: async () => {
+      called = true;
+      return {};
+    },
+    wasCalled: () => called,
+  };
 };
 const firstPlan = (w) => Object.values(w.sigmacraft.npcAgents).find((a) => a?.plan)?.plan;
 
@@ -85,7 +100,11 @@ describe("Director — live Gemma via the seam", () => {
 
   test("a model failure hard-falls-back to a deterministic beat", async () => {
     const w = freshWorld();
-    const director = attachDirector({ store: fakeStore(w), env: { DIRECTOR_LIVE: "1" }, llm: throwingLlm() });
+    const director = attachDirector({
+      store: fakeStore(w),
+      env: { DIRECTOR_LIVE: "1" },
+      llm: throwingLlm(),
+    });
     assert.equal(await director.propose(), true);
     assert.equal(w.sigmacraft.directorQueue[0].source, "fallback");
   });

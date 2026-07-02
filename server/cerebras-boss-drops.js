@@ -16,8 +16,8 @@
 // fresh ilvl-scaled skeleton on EVERY forge, so a stale reply can never bypass the
 // trust boundary. Cache is in-memory only (regenerable) → no world.json writes.
 
-import { forgeRaidDrop, RAID_BOSS_DROPS } from "../shared/loot.js";
 import { enrichBossDrop } from "../shared/boss-drops.js";
+import { forgeRaidDrop, RAID_BOSS_DROPS } from "../shared/loot.js";
 import { createLlmClient } from "./llm.js";
 
 function bossPrompt(base, bossId, context) {

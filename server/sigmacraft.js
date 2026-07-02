@@ -8,17 +8,17 @@
 // zones exist before mutating.
 
 import {
-  MAX_SIGMACRAFT_PENDING_INTENTS,
-  MAX_SIGMACRAFT_TICK_INTENTS,
-  MAX_SIGMACRAFT_RECENT_EVENTS,
-  MAX_NPC_EFFECTS_PER_TICK,
-  MAX_DIRECTOR_EFFECTS_PER_TICK,
-  NPC_SUPPLY_CAP,
-  NPC_MOOD_MIN,
-  NPC_MOOD_MAX,
-  PARTY_MAX_MEMBERS,
   createSigmacraftState,
   deriveNextStep,
+  MAX_DIRECTOR_EFFECTS_PER_TICK,
+  MAX_NPC_EFFECTS_PER_TICK,
+  MAX_SIGMACRAFT_PENDING_INTENTS,
+  MAX_SIGMACRAFT_RECENT_EVENTS,
+  MAX_SIGMACRAFT_TICK_INTENTS,
+  NPC_MOOD_MAX,
+  NPC_MOOD_MIN,
+  NPC_SUPPLY_CAP,
+  PARTY_MAX_MEMBERS,
   seedSigmacraftOverworld,
   tileSupportsAction,
 } from "../shared/sigmacraft.js";
@@ -112,8 +112,10 @@ export function advance(ctx) {
   if (!world) return false;
   const sigmacraft = world.sigmacraft;
   // Idle fast path: nothing pending, no NPC plan, no director beat → no work at all.
-  const hasPending = Array.isArray(sigmacraft?.pendingIntents) && sigmacraft.pendingIntents.length > 0;
-  const hasDirectorWork = Array.isArray(sigmacraft?.directorQueue) && sigmacraft.directorQueue.length > 0;
+  const hasPending =
+    Array.isArray(sigmacraft?.pendingIntents) && sigmacraft.pendingIntents.length > 0;
+  const hasDirectorWork =
+    Array.isArray(sigmacraft?.directorQueue) && sigmacraft.directorQueue.length > 0;
   if (!sigmacraft || (!hasPending && !hasActiveNpcAgenda(sigmacraft) && !hasDirectorWork)) {
     return false;
   }
@@ -135,7 +137,10 @@ export function advance(ctx) {
   };
   const emitAmbient = (text) => {
     appendEvent(sigmacraft, tick, text);
-    ctx?.store?.pushFeed?.({ kind: "narrative", name: "Sigmacraft", detail: text }, { persist: false });
+    ctx?.store?.pushFeed?.(
+      { kind: "narrative", name: "Sigmacraft", detail: text },
+      { persist: false },
+    );
   };
 
   const tiles = sigmacraft.map?.tiles || {};
@@ -151,7 +156,7 @@ export function advance(ctx) {
       const from = sigmacraft.actorPlaces[token] || sigmacraft.map?.townTileId;
       const fromTile = tiles[from];
       const dest = tiles[intent.targetId];
-      if (!dest || !fromTile || !fromTile.exits.includes(dest.id)) {
+      if (!dest || !fromTile?.exits.includes(dest.id)) {
         emit(`${actorName(token)} could not find that road.`);
         continue;
       }
@@ -160,7 +165,7 @@ export function advance(ctx) {
       // The party travels together: recruited members (partyLocked, so the planner
       // leaves them be) follow the leader to the new tile each hop.
       const party = sigmacraft.parties[token];
-      if (party && party.members.length) {
+      if (party?.members.length) {
         for (const m of party.members) {
           const npc = sigmacraft.overworldNpcs?.[m.npcId];
           if (npc) npc.tileId = dest.id;
@@ -190,7 +195,16 @@ export function advance(ctx) {
       // ambient/regenerable) and partyLock pins it to the leader.
       const leaderTile = sigmacraft.actorPlaces[token] || sigmacraft.map?.townTileId;
       const npc = sigmacraft.overworldNpcs?.[intent.targetNpcId];
-      const party = sigmacraft.parties[token] || (sigmacraft.parties[token] = { leaderToken: token, members: [], status: "forming", targetTileId: null, createdTick: tick });
+      if (!sigmacraft.parties[token]) {
+        sigmacraft.parties[token] = {
+          leaderToken: token,
+          members: [],
+          status: "forming",
+          targetTileId: null,
+          createdTick: tick,
+        };
+      }
+      const party = sigmacraft.parties[token];
       if (!npc) {
         emit(`${actorName(token)} found no one by that name.`);
       } else if (npc.tileId !== leaderTile) {
@@ -201,7 +215,13 @@ export function advance(ctx) {
         emit(`${actorName(token)}'s party is full.`);
       } else if (!party.members.some((m) => m.npcId === npc.id)) {
         npc.partyLock = token;
-        party.members.push({ npcId: npc.id, name: npc.name, archetype: npc.archetype, faction: npc.faction, persona: npc.persona });
+        party.members.push({
+          npcId: npc.id,
+          name: npc.name,
+          archetype: npc.archetype,
+          faction: npc.faction,
+          persona: npc.persona,
+        });
         emit(`${npc.name} joined ${actorName(token)}'s party.`);
       }
     } else if (intent.kind === "disband") {
@@ -235,24 +255,29 @@ export function advance(ctx) {
     .sort();
   if (npcIds.length) {
     // Own cursor (NOT the planner's npcCursor) so the two lanes never collide.
-    let cursor = ((sigmacraft.npcConsumeCursor || 0) % npcIds.length + npcIds.length) % npcIds.length;
+    const cursor =
+      (((sigmacraft.npcConsumeCursor || 0) % npcIds.length) + npcIds.length) % npcIds.length;
     const applyCount = Math.min(MAX_NPC_EFFECTS_PER_TICK, npcIds.length);
     for (let i = 0; i < applyCount; i++) {
       const id = npcIds[(cursor + i) % npcIds.length];
       const agent = sigmacraft.npcAgents[id];
       const rec = sigmacraft.overworldNpcs?.[id];
-      if (!rec) { agent.plan.cursor = agent.plan.agenda.length; continue; }
+      if (!rec) {
+        agent.plan.cursor = agent.plan.agenda.length;
+        continue;
+      }
       const npcName = rec.name || id;
       const step = deriveNextStep(rec, agent.plan.agenda, agent.plan.cursor || 0, tiles);
       const here = tiles[rec.tileId];
       // Terminal actions re-check tile support at apply time (deriveNextStep already
       // gates this; the redundant guard keeps the apply path honest as defense-in-depth).
-      const supported = step.kind === "move" || step.kind === "talk" || tileSupportsAction(here, step.kind);
+      const supported =
+        step.kind === "move" || step.kind === "talk" || tileSupportsAction(here, step.kind);
       switch (supported ? step.kind : "noop") {
         case "move": {
           // BFS already returns an adjacent hop; re-check adjacency as defense.
           const dest = tiles[step.targetId];
-          if (dest && here && here.exits.includes(dest.id)) {
+          if (dest && here?.exits.includes(dest.id)) {
             rec.tileId = dest.id;
             emitAmbient(`${npcName} traveled to ${dest.name}.`);
           }
@@ -282,7 +307,10 @@ export function advance(ctx) {
         case "talk":
           if (agent.plan.dialogueLine) {
             appendEvent(sigmacraft, tick, `${npcName}: ${agent.plan.dialogueLine}`);
-            ctx?.store?.pushFeed?.({ kind: "npc_dialogue", name: npcName, detail: agent.plan.dialogueLine }, { persist: false });
+            ctx?.store?.pushFeed?.(
+              { kind: "npc_dialogue", name: npcName, detail: agent.plan.dialogueLine },
+              { persist: false },
+            );
           }
           break;
         default:
@@ -300,9 +328,10 @@ export function advance(ctx) {
   // never sets `dirty` (idle quiescence), same rule as the NPC lane.
   if (Array.isArray(sigmacraft.directorQueue) && sigmacraft.directorQueue.length) {
     const beats = sigmacraft.directorQueue.splice(0, MAX_DIRECTOR_EFFECTS_PER_TICK);
-    const gm =
-      sigmacraft.gameMaster ||
-      (sigmacraft.gameMaster = { status: "idle", lastBeatTick: 0, lastBeatKind: null, beats: 0 });
+    if (!sigmacraft.gameMaster) {
+      sigmacraft.gameMaster = { status: "idle", lastBeatTick: 0, lastBeatKind: null, beats: 0 };
+    }
+    const gm = sigmacraft.gameMaster;
     for (const beat of beats) {
       if (beat.kind === "quest_beat") {
         sigmacraft.objective = {

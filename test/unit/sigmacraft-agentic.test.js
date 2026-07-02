@@ -5,16 +5,15 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-
+import { advance } from "../../server/sigmacraft.js";
+import { attachNpcPlanner } from "../../server/sigmacraft-npc-agents.js";
+import { freshWorld } from "../../server/world-tick.js";
 import {
   deriveNextStep,
   generateOverworld,
   nextHopToward,
   tileSupportsAction,
 } from "../../shared/sigmacraft.js";
-import { advance } from "../../server/sigmacraft.js";
-import { attachNpcPlanner } from "../../server/sigmacraft-npc-agents.js";
-import { freshWorld } from "../../server/world-tick.js";
 
 const MAP = generateOverworld("agentic-seed");
 const TILES = MAP.tiles;
@@ -79,7 +78,12 @@ describe("deriveNextStep — the cascade", () => {
 
   test("an unsupported terminal action at the tile degrades to talk (never fails)", () => {
     const town = typeTile("town");
-    const s = deriveNextStep({ tileId: town.id }, [{ kind: "gather", targetTileId: town.id }], 0, TILES);
+    const s = deriveNextStep(
+      { tileId: town.id },
+      [{ kind: "gather", targetTileId: town.id }],
+      0,
+      TILES,
+    );
     assert.equal(s.kind, "talk"); // town can't gather → talk
     assert.equal(s.objectiveComplete, true);
   });
@@ -97,7 +101,9 @@ describe("integration — strategic agenda cascades to completion on the tick", 
     const store = { getWorldState: () => w, putWorldState() {}, pushFeed() {} };
     await attachNpcPlanner({ store, env: { SIGMACRAFT_NPC_MAX_PER_CYCLE: "5" } }).plan();
 
-    const [id, agent] = Object.entries(w.sigmacraft.npcAgents).find(([, a]) => a?.plan?.agenda?.length);
+    const [id, agent] = Object.entries(w.sigmacraft.npcAgents).find(
+      ([, a]) => a?.plan?.agenda?.length,
+    );
     const len = agent.plan.agenda.length;
     const rec = w.sigmacraft.overworldNpcs[id];
     const startTile = rec.tileId;

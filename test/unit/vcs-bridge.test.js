@@ -14,12 +14,12 @@ import { join } from "node:path";
 import { after, before, describe, test } from "node:test";
 
 import {
-  VcsClient,
   buildBridgeAuthHeaders,
   deriveVcsAccountId,
   isFreshBridgeTimestamp,
   normalizeTwitchLogin,
   toOpaqueSnapshot,
+  VcsClient,
   vcsAccountForToken,
 } from "../../server/vcs-bridge.js";
 
@@ -102,7 +102,10 @@ describe("vcsAccountForToken", () => {
   });
 
   test("an ambiguous token (two logins) resolves to anonymous, not a guess", () => {
-    const acct = vcsAccountForToken(fakeStore({ page: "sig_shared", warden: "sig_shared" }), "sig_shared");
+    const acct = vcsAccountForToken(
+      fakeStore({ page: "sig_shared", warden: "sig_shared" }),
+      "sig_shared",
+    );
     assert.equal(acct.verified, false);
     assert.equal(acct.vcsAccountId, null);
     assert.equal(acct.identitySource, "anonymous");
@@ -145,7 +148,9 @@ describe("VcsClient (fixture-driven; real backend is private)", () => {
     const client = new VcsClient({
       sessionCookie: "session_id=abc",
       fetchImpl: fakeFetch({
-        "/api/v1/vcs/whoami": { body: { ok: true, login: "PageWarden", vcsAccountId: "vcs_FORGED" } },
+        "/api/v1/vcs/whoami": {
+          body: { ok: true, login: "PageWarden", vcsAccountId: "vcs_FORGED" },
+        },
       }),
     });
     const who = await client.whoami();
@@ -198,7 +203,11 @@ describe("store persistence — pointers only, churn-guarded", () => {
 
   test("upsert stores exactly the 5 pointer keys — no durable account dup", () => {
     const pointer = vcsAccountForToken({ allTwitchLinks: () => ({ page: "sig_p" }) }, "sig_p");
-    const stored = store.upsertVcsAccount("sig_p", { ...pointer, loadout: { a: 1 }, profile: { b: 2 } });
+    const stored = store.upsertVcsAccount("sig_p", {
+      ...pointer,
+      loadout: { a: 1 },
+      profile: { b: 2 },
+    });
     assert.deepEqual(
       Object.keys(stored).sort(),
       ["identitySource", "snapshotVersion", "twitchLogin", "vcsAccountId", "verified"],
