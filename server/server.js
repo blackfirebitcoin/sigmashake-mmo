@@ -29,7 +29,6 @@ import { FACTION_IDS, factionById } from "../shared/factions.js";
 import { itemPower } from "../shared/loot.js";
 import { freshMarket } from "../shared/market.js";
 import { passivePointsFor, passiveTreePayload } from "../shared/passive-tree.js";
-import { projectSigmacraftSnapshot } from "../shared/sigmacraft.js";
 import {
   ensureStarterGear,
   freshCharacter,
@@ -38,6 +37,7 @@ import {
   xpForLevel,
 } from "../shared/progression.js";
 import { ensureQuests } from "../shared/quests.js";
+import { projectSigmacraftSnapshot } from "../shared/sigmacraft.js";
 import { RESERVABLE_SKILLS } from "../shared/skills.js";
 import { derive } from "../shared/stats.js";
 import {
@@ -52,6 +52,7 @@ import { ZONES } from "../shared/zones.js";
 import { attachAgentRealm } from "./agent-realm.js";
 import * as arena from "./arena.js";
 import { refreshLastSeen } from "./arena.js";
+import { createBossDropForge } from "./cerebras-boss-drops.js";
 import { dispatchCommand, factionRepView, joinFaction, resolveFactionId } from "./commands.js";
 import * as drops from "./drops.js";
 import { delveFeedback } from "./feedback.js";
@@ -62,17 +63,16 @@ import { buildNaviCall } from "./navi-call.js";
 import * as npcWorld from "./npc-world.js";
 import { startOnboarding } from "./onboarding.js";
 import { attachOracleBazaar } from "./oracle-bazaar.js";
+import { runPartyDelve } from "./party-delve.js";
 import { attachPlayOnboard } from "./play-onboard.js";
 import * as raidState from "./raid-state.js";
 import { attachRealtime } from "./realtime.js";
 import * as retention from "./retention.js";
 import express from "./router.js";
-import * as store from "./store.js";
 import * as sigmacraft from "./sigmacraft.js";
-import { attachNpcPlanner } from "./sigmacraft-npc-agents.js";
 import { attachDirector } from "./sigmacraft-director.js";
-import { createBossDropForge } from "./cerebras-boss-drops.js";
-import { runPartyDelve } from "./party-delve.js";
+import { attachNpcPlanner } from "./sigmacraft-npc-agents.js";
+import * as store from "./store.js";
 import * as storytellerLoop from "./storyteller-loop.js";
 import {
   guard,
@@ -2412,7 +2412,9 @@ function endRaid(victory, lastHitLogin) {
           // forge. NEVER awaits the model on the kill path.
           const item = bossDrops.forgeOrCached(raid.boss_id, lvl);
           // Fire-and-forget: warm the cache off-tick for the next kill of this boss.
-          bossDrops.warm(raid.boss_id, lvl, { killerLevel: lvl, zone: raid.bossZone }).catch(() => {});
+          bossDrops
+            .warm(raid.boss_id, lvl, { killerLevel: lvl, zone: raid.bossZone })
+            .catch(() => {});
           if (item) {
             const inv = rec.character.run?.inventory;
             if (Array.isArray(inv) && inv.length < INVENTORY_MAX) {
@@ -3194,7 +3196,9 @@ const director = attachDirector({ store });
 superviseInterval(
   "sigmacraft.director",
   () => {
-    director.propose().catch((err) => console.error(`[sigmacraft.director] ${err?.message || err}`));
+    director
+      .propose()
+      .catch((err) => console.error(`[sigmacraft.director] ${err?.message || err}`));
   },
   30_000,
 );

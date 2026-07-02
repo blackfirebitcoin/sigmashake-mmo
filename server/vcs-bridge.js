@@ -186,7 +186,9 @@ export class VcsClient {
 
   // Project Ascendant full sigma summary; proxies to MMO /api/sigma/:login.
   async combatSigma(snapshotVersion = 0) {
-    const { status, body } = await this.request("GET", "/api/v1/vcs/combat-sigma", { viewer: true });
+    const { status, body } = await this.request("GET", "/api/v1/vcs/combat-sigma", {
+      viewer: true,
+    });
     if (status >= 400 || body?.ok === false) {
       return { ok: false, error: body?.error || `vcs_combat_sigma_failed_${status}`, status };
     }

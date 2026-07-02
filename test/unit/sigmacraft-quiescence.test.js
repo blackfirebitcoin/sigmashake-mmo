@@ -22,7 +22,9 @@ function trackingStore(world) {
   let puts = 0;
   return {
     getWorldState: () => world,
-    putWorldState: () => { puts += 1; },
+    putWorldState: () => {
+      puts += 1;
+    },
     pushFeed: () => {},
     puts: () => puts,
   };

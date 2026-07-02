@@ -117,7 +117,7 @@ function latestPlans(sigmacraft, n) {
     }));
 }
 
-function worldSummary(world, sigmacraft) {
+function worldSummary(_world, sigmacraft) {
   const map = sigmacraft.map;
   const types = tileTypeCounts(map);
   return {
@@ -136,7 +136,9 @@ function worldSummary(world, sigmacraft) {
     population: { totalNpcs: Object.keys(sigmacraft.overworldNpcs || {}).length },
     planner: plannerHealth(sigmacraft.npcAgents),
     latestNpcPlans: latestPlans(sigmacraft, 5),
-    recentEvents: (sigmacraft.recentEvents || []).slice(-8).map((e) => ({ tick: e.tick, text: e.text })),
+    recentEvents: (sigmacraft.recentEvents || [])
+      .slice(-8)
+      .map((e) => ({ tick: e.tick, text: e.text })),
   };
 }
 
@@ -167,7 +169,9 @@ function printWorld(world, sigmacraft) {
   );
   lines.push("Latest plans:");
   for (const p of s.latestNpcPlans) {
-    lines.push(`  ${p.name} (${p.source || "?"}${p.consumed ? ", consumed" : ""}): ${p.currentGoal || "—"}`);
+    lines.push(
+      `  ${p.name} (${p.source || "?"}${p.consumed ? ", consumed" : ""}): ${p.currentGoal || "—"}`,
+    );
   }
   lines.push("Recent events:");
   for (const e of s.recentEvents.slice(-5)) lines.push(`  [t${e.tick}] ${e.text}`);
@@ -197,7 +201,11 @@ function printMap(sigmacraft) {
           x: tile.x,
           y: tile.y,
           npcCount: counts[tile.id] || 0,
-          exits: (tile.exits || []).map((id) => ({ id, name: tiles[id]?.name || id, type: tiles[id]?.type })),
+          exits: (tile.exits || []).map((id) => ({
+            id,
+            name: tiles[id]?.name || id,
+            type: tiles[id]?.type,
+          })),
         },
         null,
         2,
@@ -217,7 +225,12 @@ function printMap(sigmacraft) {
           townTileId: map.townTileId,
           tileCount: Object.keys(tiles).length,
           typeCounts: tileTypeCounts(map),
-          tiles: list.map((t) => ({ id: t.id, type: t.type, npcCount: counts[t.id] || 0, exits: t.exits })),
+          tiles: list.map((t) => ({
+            id: t.id,
+            type: t.type,
+            npcCount: counts[t.id] || 0,
+            exits: t.exits,
+          })),
         },
         null,
         2,
@@ -226,7 +239,9 @@ function printMap(sigmacraft) {
     return;
   }
   const lines = [];
-  lines.push(`Map ${map.width}x${map.height} — ${Object.keys(tiles).length} tiles, town=${map.townTileId}`);
+  lines.push(
+    `Map ${map.width}x${map.height} — ${Object.keys(tiles).length} tiles, town=${map.townTileId}`,
+  );
   lines.push(
     `Types: ${Object.entries(tileTypeCounts(map))
       .sort((a, b) => b[1] - a[1])
@@ -237,9 +252,15 @@ function printMap(sigmacraft) {
     .map((t) => ({ ...t, npcCount: counts[t.id] || 0 }))
     .sort((a, b) => b.npcCount - a.npcCount)
     .slice(0, limit());
-  lines.push(typeFilter ? `Tiles (type=${typeFilter}, top ${limit()} by population):` : `Busiest tiles (top ${limit()}):`);
+  lines.push(
+    typeFilter
+      ? `Tiles (type=${typeFilter}, top ${limit()} by population):`
+      : `Busiest tiles (top ${limit()}):`,
+  );
   for (const t of busiest) {
-    lines.push(`  ${t.id} [${t.type}] pop ${t.npcCount} • exits: ${(t.exits || []).join(", ") || "—"}`);
+    lines.push(
+      `  ${t.id} [${t.type}] pop ${t.npcCount} • exits: ${(t.exits || []).join(", ") || "—"}`,
+    );
   }
   console.log(lines.join("\n"));
 }
@@ -250,7 +271,11 @@ function findNpc(sigmacraft, query) {
   return (
     npcs.find((npc) => npc.id === query) ||
     npcs.find((npc) => String(npc.name || "").toLowerCase() === q) ||
-    npcs.find((npc) => String(npc.name || "").toLowerCase().includes(q))
+    npcs.find((npc) =>
+      String(npc.name || "")
+        .toLowerCase()
+        .includes(q),
+    )
   );
 }
 function printNpc(sigmacraft, query) {
@@ -295,7 +320,7 @@ function printNpc(sigmacraft, query) {
   );
 }
 
-function printSnapshot(world, sigmacraft) {
+function printSnapshot(world, _sigmacraft) {
   const token = arg("--token") || null;
   const snapshot = projectSigmacraftSnapshot(world, null, { token });
   console.log(JSON.stringify(snapshot, null, 2));
@@ -314,7 +339,10 @@ async function main() {
       printMap(sigmacraft);
       return;
     case "npc":
-      printNpc(sigmacraft, process.argv[3] && !process.argv[3].startsWith("--") ? process.argv[3] : arg("--name"));
+      printNpc(
+        sigmacraft,
+        process.argv[3] && !process.argv[3].startsWith("--") ? process.argv[3] : arg("--name"),
+      );
       return;
     case "snapshot":
       printSnapshot(world, sigmacraft);
@@ -326,6 +354,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error && error.stack ? error.stack : String(error));
+  console.error(error?.stack ? error.stack : String(error));
   process.exitCode = 1;
 });

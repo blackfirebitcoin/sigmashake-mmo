@@ -5,12 +5,22 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { buildNpcCombatant, buildPartyCombatants, buildPlayerCombatant } from "../../server/party-build.js";
+import {
+  buildNpcCombatant,
+  buildPartyCombatants,
+  buildPlayerCombatant,
+} from "../../server/party-build.js";
 import { freshWorld } from "../../server/world-tick.js";
 
 describe("buildPlayerCombatant — honors the live run", () => {
   test("starts at run.hp (not maxHp) and reflects run.alive", () => {
-    const run = { level: 6, stats: { str: 10, agi: 8, vit: 10, luck: 5, int: 5, greed: 5, resolve: 8 }, gear: {}, hp: 7, alive: true };
+    const run = {
+      level: 6,
+      stats: { str: 10, agi: 8, vit: 10, luck: 5, int: 5, greed: 5, resolve: 8 },
+      gear: {},
+      hp: 7,
+      alive: true,
+    };
     const c = buildPlayerCombatant({ name: "Hero", run });
     assert.ok(c.sheet.maxHp > 7, "maxHp is higher than the wounded live hp");
     assert.equal(c.hp, 7, "combatant starts at the run's live hp");
@@ -53,8 +63,18 @@ describe("buildPartyCombatants", () => {
   test("builds the leader + each recruited member", () => {
     const w = freshWorld();
     const members = Object.values(w.sigmacraft.overworldNpcs).slice(0, 2);
-    const party = { members: members.map((m) => ({ npcId: m.id, name: m.name, archetype: m.archetype })) };
-    const leader = { token: "agt_x", name: "Hero", run: { level: 3, stats: { str: 8, agi: 6, vit: 7, luck: 5, int: 5, greed: 5, resolve: 6 }, gear: {} } };
+    const party = {
+      members: members.map((m) => ({ npcId: m.id, name: m.name, archetype: m.archetype })),
+    };
+    const leader = {
+      token: "agt_x",
+      name: "Hero",
+      run: {
+        level: 3,
+        stats: { str: 8, agi: 6, vit: 7, luck: 5, int: 5, greed: 5, resolve: 6 },
+        gear: {},
+      },
+    };
     const roster = buildPartyCombatants(party, leader, (id) => w.sigmacraft.overworldNpcs[id]);
     assert.equal(roster.length, 3, "leader + 2 members");
     assert.equal(roster[0].isPlayer, true);

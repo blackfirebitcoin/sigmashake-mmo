@@ -8,7 +8,16 @@ import { makeEnemy } from "../shared/enemies.js";
 import { rollDrop } from "../shared/loot.js";
 import { makeRng } from "../shared/rng.js";
 
-const NORMALS = ["goblin", "skeleton", "imp", "wolf", "boar", "bandit", "abyss_crawler", "corrupted_knight"];
+const NORMALS = [
+  "goblin",
+  "skeleton",
+  "imp",
+  "wolf",
+  "boar",
+  "bandit",
+  "abyss_crawler",
+  "corrupted_knight",
+];
 // Boss ids are RAID_BOSS_DROPS keys → a boss kill yields a REAL raid drop (+ optional
 // Gemma enrichment via the boss-drop forge).
 const BOSSES = ["goblin_king", "hollow_druid", "chrome_centurion", "catacomb_tyrant"];
@@ -23,7 +32,13 @@ function enemyToCombatant(e, idx, bossId = null) {
     bossId,
     enemyKind: e.kind,
     lootBonus: e.lootBonus || 0,
-    sheet: { maxHp: e.maxHp, attack: e.attack, defense: e.defense, speed: e.speed || 8, ...ENEMY_SHEET_EXTRA },
+    sheet: {
+      maxHp: e.maxHp,
+      attack: e.attack,
+      defense: e.defense,
+      speed: e.speed || 8,
+      ...ENEMY_SHEET_EXTRA,
+    },
     hp: e.maxHp,
   };
 }
@@ -32,7 +47,7 @@ function enemyToCombatant(e, idx, bossId = null) {
 // buildEncounter ignores party size → a 4-man party would stomp a single-fighter
 // pack; here count grows with the party). A dangerous dungeon is capped by a boss.
 export function buildDungeonEnemies(tile, partySize = 1, seed = 1) {
-  const rng = makeRng((seed >>> 0) || 1);
+  const rng = makeRng(seed >>> 0 || 1);
   const danger = Math.max(1, tile?.danger || 1);
   // Gentle scaling tuned for a winnable demo: a level-8 party beats a low/mid
   // dungeon comfortably; danger climbs the threat. A mythic BOSS only caps the
@@ -55,7 +70,15 @@ export function buildDungeonEnemies(tile, partySize = 1, seed = 1) {
 // landed the kill. Boss kills route through bossDrops.forgeOrCached (sync, off the
 // resolution path; warms Gemma enrichment for next time). `builtEnemies` is the
 // buildDungeonEnemies output (carries bossId, which the resolver result drops).
-export function rollPartyLoot({ result, builtEnemies, party, level, depth, seed, bossDrops = null }) {
+export function rollPartyLoot({
+  result,
+  builtEnemies,
+  party,
+  level,
+  depth,
+  seed,
+  bossDrops = null,
+}) {
   if (!result || result.outcome !== "victory") return { drops: [] };
   const rng = makeRng(((seed >>> 0) ^ 0x9e3779b9) >>> 0);
   const memberById = new Map(party.map((c) => [c.id, c]));
@@ -75,7 +98,14 @@ export function rollPartyLoot({ result, builtEnemies, party, level, depth, seed,
       }
     }
     if (!item) item = rollDrop({ rng, level, depth, bias: bossId ? 3 : 1 });
-    if (item) drops.push({ memberId: member.id, memberName: member.name, isPlayer: !!member.isPlayer, fromBoss: !!bossId, item });
+    if (item)
+      drops.push({
+        memberId: member.id,
+        memberName: member.name,
+        isPlayer: !!member.isPlayer,
+        fromBoss: !!bossId,
+        item,
+      });
   }
   return { drops };
 }

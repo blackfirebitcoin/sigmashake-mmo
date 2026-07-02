@@ -55,12 +55,19 @@ const mk = (c, side) => ({
   killedBy: null,
 });
 
-export function resolvePartyEncounter({ party = [], enemies = [], seed = 1, maxRounds = MAX_ROUNDS } = {}) {
-  const rnd = prng((seed >>> 0) || 1);
+export function resolvePartyEncounter({
+  party = [],
+  enemies = [],
+  seed = 1,
+  maxRounds = MAX_ROUNDS,
+} = {}) {
+  const rnd = prng(seed >>> 0 || 1);
   const P = party.map((c) => mk(c, "party"));
   const E = enemies.map((c) => mk(c, "enemy"));
   const log = [];
-  const push = (e) => { if (log.length < MAX_LOG) log.push(e); };
+  const push = (e) => {
+    if (log.length < MAX_LOG) log.push(e);
+  };
   let round = 0;
 
   while (round < maxRounds && aliveOf(P).length && aliveOf(E).length) {
@@ -103,7 +110,13 @@ export function resolvePartyEncounter({ party = [], enemies = [], seed = 1, maxR
     }
     // Independent flee: a wounded NPC ally may break off (survives, leaves the fight).
     for (const c of P) {
-      if (!c.isPlayer && c.hp > 0 && !c.fled && c.hp < c.sheet.maxHp * FLEE_HP_FRAC && rnd() < FLEE_CHANCE) {
+      if (
+        !c.isPlayer &&
+        c.hp > 0 &&
+        !c.fled &&
+        c.hp < c.sheet.maxHp * FLEE_HP_FRAC &&
+        rnd() < FLEE_CHANCE
+      ) {
         c.fled = true;
         push({ round, actor: c.id, kind: "flee" });
       }
@@ -114,8 +127,22 @@ export function resolvePartyEncounter({ party = [], enemies = [], seed = 1, maxR
   return {
     outcome,
     rounds: round,
-    party: P.map((c) => ({ id: c.id, name: c.name, isPlayer: c.isPlayer, hp: Math.max(0, c.hp), alive: c.hp > 0, fled: c.fled, kills: c.kills })),
-    enemies: E.map((c) => ({ id: c.id, name: c.name, hp: Math.max(0, c.hp), alive: c.hp > 0, killedBy: c.killedBy })),
+    party: P.map((c) => ({
+      id: c.id,
+      name: c.name,
+      isPlayer: c.isPlayer,
+      hp: Math.max(0, c.hp),
+      alive: c.hp > 0,
+      fled: c.fled,
+      kills: c.kills,
+    })),
+    enemies: E.map((c) => ({
+      id: c.id,
+      name: c.name,
+      hp: Math.max(0, c.hp),
+      alive: c.hp > 0,
+      killedBy: c.killedBy,
+    })),
     kills: E.filter((c) => c.hp <= 0).map((c) => ({ enemyId: c.id, by: c.killedBy })),
     log,
   };

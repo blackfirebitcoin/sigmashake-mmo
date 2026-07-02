@@ -8,13 +8,18 @@ import { describe, test } from "node:test";
 
 import { advance, enqueueSigmacraftIntent } from "../../server/sigmacraft.js";
 import { attachNpcPlanner } from "../../server/sigmacraft-npc-agents.js";
-import { projectParty, projectSigmacraftSnapshot, PARTY_MAX_MEMBERS } from "../../shared/sigmacraft.js";
 import { vSigmacraftIntent } from "../../server/validate.js";
 import { freshWorld } from "../../server/world-tick.js";
+import {
+  PARTY_MAX_MEMBERS,
+  projectParty,
+  projectSigmacraftSnapshot,
+} from "../../shared/sigmacraft.js";
 
 const LEADER = "agt_leader"; // no actorPlaces entry → defaults to the town tile
 const feedStore = () => ({ pushFeed() {} });
-const townNpcs = (w) => Object.values(w.sigmacraft.overworldNpcs).filter((n) => n.tileId === w.sigmacraft.map.townTileId);
+const townNpcs = (w) =>
+  Object.values(w.sigmacraft.overworldNpcs).filter((n) => n.tileId === w.sigmacraft.map.townTileId);
 function recruit(w, npcId) {
   enqueueSigmacraftIntent(w, LEADER, { kind: "recruit", targetNpcId: npcId, nonce: `r${npcId}` });
   return advance({ world: w, store: feedStore() });
@@ -22,7 +27,10 @@ function recruit(w, npcId) {
 
 describe("recruit intent validation", () => {
   test("recruit requires a well-formed npc id; disband takes no target; delve is NOT an intent", () => {
-    assert.equal(vSigmacraftIntent({ kind: "recruit", targetNpcId: "npc_adventurer_000" }).targetNpcId, "npc_adventurer_000");
+    assert.equal(
+      vSigmacraftIntent({ kind: "recruit", targetNpcId: "npc_adventurer_000" }).targetNpcId,
+      "npc_adventurer_000",
+    );
     assert.throws(() => vSigmacraftIntent({ kind: "recruit", targetNpcId: "nope" }), /bad npc id/);
     assert.equal(vSigmacraftIntent({ kind: "disband" }).kind, "disband");
     assert.throws(() => vSigmacraftIntent({ kind: "delve" }), /bad enum/); // delve runs via the route, not the tick
@@ -38,13 +46,20 @@ describe("tavern recruit / disband", () => {
     const party = w.sigmacraft.parties[LEADER];
     assert.ok(party && party.members.length === 1, "one member in the party");
     assert.equal(party.members[0].npcId, npc.id);
-    assert.equal(w.sigmacraft.overworldNpcs[npc.id].partyLock, LEADER, "recruit is partyLocked to the leader");
+    assert.equal(
+      w.sigmacraft.overworldNpcs[npc.id].partyLock,
+      LEADER,
+      "recruit is partyLocked to the leader",
+    );
   });
 
   test("a partyLocked NPC stops pursuing its own agenda on the tick", async () => {
     const w = freshWorld();
     const npc = townNpcs(w)[0];
-    await attachNpcPlanner({ store: { getWorldState: () => w, putWorldState() {}, pushFeed() {} }, env: {} }).plan();
+    await attachNpcPlanner({
+      store: { getWorldState: () => w, putWorldState() {}, pushFeed() {} },
+      env: {},
+    }).plan();
     recruit(w, npc.id);
     const tileBefore = npc.tileId;
     for (let t = 0; t < 8; t++) advance({ world: w, store: feedStore() });
@@ -54,15 +69,24 @@ describe("tavern recruit / disband", () => {
   test("cannot recruit an NPC that isn't co-located, nor past the party cap", () => {
     const w = freshWorld();
     // not co-located: an NPC somewhere other than town
-    const far = Object.values(w.sigmacraft.overworldNpcs).find((n) => n.tileId !== w.sigmacraft.map.townTileId);
+    const far = Object.values(w.sigmacraft.overworldNpcs).find(
+      (n) => n.tileId !== w.sigmacraft.map.townTileId,
+    );
     recruit(w, far.id);
-    assert.ok(!w.sigmacraft.parties[LEADER] || !w.sigmacraft.parties[LEADER].members.some((m) => m.npcId === far.id), "far NPC not recruited");
+    assert.ok(
+      !w.sigmacraft.parties[LEADER]?.members.some((m) => m.npcId === far.id),
+      "far NPC not recruited",
+    );
 
     // fill to the cap from town locals (+ synthesize extra co-located NPCs if needed)
-    const town = w.sigmacraft.map.townTileId;
+    const _town = w.sigmacraft.map.townTileId;
     const locals = townNpcs(w);
     let i = 0;
-    while ((w.sigmacraft.parties[LEADER]?.members.length || 0) < PARTY_MAX_MEMBERS && i < locals.length) recruit(w, locals[i++].id);
+    while (
+      (w.sigmacraft.parties[LEADER]?.members.length || 0) < PARTY_MAX_MEMBERS &&
+      i < locals.length
+    )
+      recruit(w, locals[i++].id);
     const capped = w.sigmacraft.parties[LEADER].members.length;
     assert.ok(capped <= PARTY_MAX_MEMBERS, "never exceeds the party cap");
   });
@@ -81,7 +105,11 @@ describe("tavern recruit / disband", () => {
       enqueueSigmacraftIntent(w, LEADER, { kind: "move", targetId: next, nonce: `m${hop}` });
       advance({ world: w, store: feedStore() });
       assert.equal(w.sigmacraft.actorPlaces[LEADER], next, "leader advanced");
-      assert.equal(w.sigmacraft.overworldNpcs[npc.id].tileId, next, "member followed to the leader's tile");
+      assert.equal(
+        w.sigmacraft.overworldNpcs[npc.id].tileId,
+        next,
+        "member followed to the leader's tile",
+      );
       here = next;
     }
     assert.equal(w.sigmacraft.parties[LEADER].status, "traveling", "party is traveling");
@@ -91,7 +119,7 @@ describe("tavern recruit / disband", () => {
     const w = freshWorld();
     const npc = townNpcs(w)[0];
     recruit(w, npc.id);
-    let snap = projectSigmacraftSnapshot(w, null, { token: LEADER });
+    const snap = projectSigmacraftSnapshot(w, null, { token: LEADER });
     assert.equal(snap.party.members.length, 1, "snapshot surfaces the party");
 
     enqueueSigmacraftIntent(w, LEADER, { kind: "disband", nonce: "d1" });

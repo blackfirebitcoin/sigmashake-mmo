@@ -4,23 +4,28 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-
+import { createBossDropForge } from "../../server/cerebras-boss-drops.js";
+import { ensureDemoRun } from "../../server/party-build.js";
 import { runPartyDelve } from "../../server/party-delve.js";
 import { advance, enqueueSigmacraftIntent } from "../../server/sigmacraft.js";
-import { ensureDemoRun } from "../../server/party-build.js";
-import { createBossDropForge } from "../../server/cerebras-boss-drops.js";
-import { freshCharacter } from "../../shared/progression.js";
 import { freshWorld } from "../../server/world-tick.js";
+import { freshCharacter } from "../../shared/progression.js";
 
 const dungeonTile = (w) => Object.values(w.sigmacraft.map.tiles).find((t) => t.type === "dungeon");
 const store = { pushFeed() {} };
-const playtest = (seed) => { const c = freshCharacter(seed, "Hero"); c.isPlaytest = true; return c; };
+const playtest = (seed) => {
+  const c = freshCharacter(seed, "Hero");
+  c.isPlaytest = true;
+  return c;
+};
 const boss = () => createBossDropForge({ env: {} });
 
 describe("trust boundary (review fixes)", () => {
   test("ensureDemoRun NEVER touches a non-playtest (real) account's run", () => {
     const real = freshCharacter(1, "RealAcct"); // no isPlaytest
-    real.run.level = 1; real.run.xp = 999; real.run.inventory = [{ name: "Heirloom" }];
+    real.run.level = 1;
+    real.run.xp = 999;
+    real.run.inventory = [{ name: "Heirloom" }];
     const before = real.run;
     ensureDemoRun(real);
     assert.equal(real.run, before, "same run object — not replaced");
@@ -70,7 +75,7 @@ describe("runPartyDelve", () => {
     const out = runPartyDelve({ world: w, store, token, character, bossDrops: boss() });
     assert.equal(out.ok, true);
     // hp was carried back from the fight (not silently reset to maxHp)
-    assert.ok(character.run.hp <= character.run.hp); // tautology guard; real check below
+    assert.ok(Number.isFinite(character.run.hp)); // hp stayed a real number; real check below
     if (out.outcome === "defeat") {
       assert.equal(character.run.alive, false, "a wipe is permadeath");
       const again = runPartyDelve({ world: w, store, token, character, bossDrops: boss() });
@@ -86,7 +91,13 @@ describe("runPartyDelve", () => {
     // A was cleared this very tick — the cooldown must block re-entry regardless of
     // having delved other tiles in between (the rotation bypass the review found).
     w.sigmacraft.delveCooldowns = { [token]: { [A.id]: w.sigmacraft.tick || 0 } };
-    const out = runPartyDelve({ world: w, store, token, character: playtest(11), bossDrops: boss() });
+    const out = runPartyDelve({
+      world: w,
+      store,
+      token,
+      character: playtest(11),
+      bossDrops: boss(),
+    });
     assert.equal(out.ok, false);
     assert.match(out.error, /respawn|freshly cleared/);
   });
@@ -101,7 +112,13 @@ describe("runPartyDelve", () => {
     // a recruited party then DISBANDED (record deleted) must NOT reopen the cooldown
     w.sigmacraft.parties[token] = { leaderToken: token, members: [], status: "done" };
     delete w.sigmacraft.parties[token]; // simulate the disband intent's effect
-    const out = runPartyDelve({ world: w, store, token, character: playtest(5), bossDrops: boss() });
+    const out = runPartyDelve({
+      world: w,
+      store,
+      token,
+      character: playtest(5),
+      bossDrops: boss(),
+    });
     assert.equal(out.ok, false, "cooldown still blocks after disband");
     assert.match(out.error, /respawn|freshly cleared/);
   });
@@ -128,8 +145,18 @@ describe("runPartyDelve", () => {
     w.sigmacraft.actorPlaces[token] = dt.id;
     const members = Object.values(w.sigmacraft.overworldNpcs).slice(0, 2);
     for (const m of members) m.tileId = dt.id;
-    w.sigmacraft.parties[token] = { leaderToken: token, status: "traveling", members: members.map((m) => ({ npcId: m.id, name: m.name, archetype: m.archetype })) };
-    const out = runPartyDelve({ world: w, store, token, character: playtest(3), bossDrops: boss() });
+    w.sigmacraft.parties[token] = {
+      leaderToken: token,
+      status: "traveling",
+      members: members.map((m) => ({ npcId: m.id, name: m.name, archetype: m.archetype })),
+    };
+    const out = runPartyDelve({
+      world: w,
+      store,
+      token,
+      character: playtest(3),
+      bossDrops: boss(),
+    });
     assert.equal(out.ok, true);
     assert.equal(out.party.length, 3);
     assert.equal(w.sigmacraft.parties[token].lastDelve.outcome, out.outcome);

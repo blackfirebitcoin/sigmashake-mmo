@@ -1,18 +1,17 @@
 // SIGMA ABYSS — Sigmacraft overworld projection + advancer.
 // Run: node --test test/unit/sigmacraft.test.js
 
-import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-
+import { describe, test } from "node:test";
+import { advance, enqueueSigmacraftIntent } from "../../server/sigmacraft.js";
+import { vSigmacraftIntent } from "../../server/validate.js";
+import { freshWorld, startWorldTick } from "../../server/world-tick.js";
 import {
-  projectSigmacraftSnapshot,
-  SIGMACRAFT_INTENT_KINDS,
   MAX_SIGMACRAFT_RECENT_EVENTS,
   NPC_POPULATION_TARGET,
+  projectSigmacraftSnapshot,
+  SIGMACRAFT_INTENT_KINDS,
 } from "../../shared/sigmacraft.js";
-import { advance, enqueueSigmacraftIntent } from "../../server/sigmacraft.js";
-import { freshWorld, startWorldTick } from "../../server/world-tick.js";
-import { vSigmacraftIntent } from "../../server/validate.js";
 
 const townOf = (w) => w.sigmacraft.map.townTileId;
 const exitOf = (w, tileId) => w.sigmacraft.map.tiles[tileId].exits[0];
@@ -28,7 +27,13 @@ describe("Sigmacraft state + overworld projection", () => {
   });
 
   test("intent kinds are the bounded enum", () => {
-    assert.deepEqual([...SIGMACRAFT_INTENT_KINDS].sort(), ["disband", "move", "recruit", "rest", "talk"]);
+    assert.deepEqual([...SIGMACRAFT_INTENT_KINDS].sort(), [
+      "disband",
+      "move",
+      "recruit",
+      "rest",
+      "talk",
+    ]);
   });
 
   test("snapshot projects the current tile + tile-exit move actions + windowed map", () => {
@@ -38,7 +43,8 @@ describe("Sigmacraft state + overworld projection", () => {
     assert.ok(w.sigmacraft.map.tiles[snap.place.id], "place is a real tile");
     const moves = snap.validActions.filter((a) => a.kind === "move");
     assert.ok(moves.length > 0);
-    for (const m of moves) assert.ok(w.sigmacraft.map.tiles[m.targetId], "move target is a real tile");
+    for (const m of moves)
+      assert.ok(w.sigmacraft.map.tiles[m.targetId], "move target is a real tile");
     assert.ok(snap.validActions.some((a) => a.kind === "rest"));
     assert.ok(snap.worldMap.cells.length > 0 && snap.worldMap.cells.some((c) => c.current));
   });
@@ -68,7 +74,10 @@ describe("Sigmacraft advancer", () => {
     advance({ world: w });
     assert.equal(w.sigmacraft.tick, 1);
     assert.equal(w.sigmacraft.actorPlaces.tok_a, target);
-    assert.match(w.sigmacraft.recentEvents.at(-1).text, new RegExp(w.sigmacraft.map.tiles[target].name));
+    assert.match(
+      w.sigmacraft.recentEvents.at(-1).text,
+      new RegExp(w.sigmacraft.map.tiles[target].name),
+    );
   });
 
   test("a non-adjacent move is rejected at apply time (no teleport)", () => {
@@ -158,7 +167,11 @@ describe("startWorldTick legacy gating", () => {
       superviseInterval,
       intervalMs: 3000,
       legacyEvery: 20,
-      fastAdvancers: [() => { fast += 1; }],
+      fastAdvancers: [
+        () => {
+          fast += 1;
+        },
+      ],
       extraAdvancers: [],
     });
     for (let i = 0; i < 40; i++) tickFn();

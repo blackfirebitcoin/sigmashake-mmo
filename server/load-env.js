@@ -30,7 +30,11 @@ export function loadEnvFile(file = path.join(os.homedir(), ".sigmashake", "mmo.e
     if (!key || key in process.env) continue; // real env wins
     let value = line.slice(eq + 1).trim();
     // strip matching surrounding quotes
-    if (value.length >= 2 && (value[0] === '"' || value[0] === "'") && value[value.length - 1] === value[0]) {
+    if (
+      value.length >= 2 &&
+      (value[0] === '"' || value[0] === "'") &&
+      value[value.length - 1] === value[0]
+    ) {
       value = value.slice(1, -1);
     }
     process.env[key] = value;

@@ -44,7 +44,8 @@ function applyArchetypeBuild(run, archetype, seed) {
   const total = (level - 1) * POINTS_PER_LEVEL;
   const wsum = Object.values(build.weights).reduce((a, b) => a + b, 0) || 1;
   for (const [stat, w] of Object.entries(build.weights)) {
-    if (STAT_KEYS.includes(stat)) run.stats[stat] = (run.stats[stat] || 0) + Math.round((total * w) / wsum);
+    if (STAT_KEYS.includes(stat))
+      run.stats[stat] = (run.stats[stat] || 0) + Math.round((total * w) / wsum);
   }
   return level;
 }
@@ -81,13 +82,14 @@ export function ensureDemoRun(character) {
     if (!Array.isArray(existing.inventory)) existing.inventory = [];
     return existing;
   }
-  const run = freshRun((character.seed >>> 0) || 1, 0, null, character);
+  const run = freshRun(character.seed >>> 0 || 1, 0, null, character);
   run.level = 8; // a capable demo hero — clears low/mid dungeons, tested by danger
   const total = (run.level - 1) * 3;
   const weights = { str: 3, vit: 3, agi: 2, resolve: 1 };
   const wsum = Object.values(weights).reduce((a, b) => a + b, 0);
   for (const [stat, w] of Object.entries(weights)) {
-    if (STAT_KEYS.includes(stat)) run.stats[stat] = (run.stats[stat] || 0) + Math.round((total * w) / wsum);
+    if (STAT_KEYS.includes(stat))
+      run.stats[stat] = (run.stats[stat] || 0) + Math.round((total * w) / wsum);
   }
   if (!Array.isArray(run.inventory)) run.inventory = [];
   run.alive = true;
@@ -102,7 +104,8 @@ export function ensureDemoRun(character) {
 export function buildPlayerCombatant(character) {
   const run = character?.run || null;
   const sheet = derive(run, character);
-  const liveHp = run && Number.isFinite(run.hp) && run.hp > 0 ? Math.min(run.hp, sheet.maxHp) : sheet.maxHp;
+  const liveHp =
+    run && Number.isFinite(run.hp) && run.hp > 0 ? Math.min(run.hp, sheet.maxHp) : sheet.maxHp;
   return {
     id: character?.token || character?.login || "player",
     name: character?.name || character?.login || "Hero",
